@@ -62,9 +62,7 @@ namespace MergeCafe.Core
             _game.Board.BoardChanged += RefreshHudSpace;
             RefreshHudSpace();
 
-            var upgradePlaceholder = UIFactory.CreateText(_ui.UpgradePanel, "UpgradePlaceholder",
-                "보드 확장 / 생성기 업그레이드", 26, UITheme.TextDim);
-            UIFactory.Stretch((RectTransform)upgradePlaceholder.transform);
+            UpgradePanelView.Build(_ui.UpgradePanel, _game);
         }
 
         private void Update()

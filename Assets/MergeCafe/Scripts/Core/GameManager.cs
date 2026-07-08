@@ -19,6 +19,7 @@ namespace MergeCafe.Core
         public GeneratorManager Generators { get; }
         public EconomyManager Economy { get; }
         public OrderManager Orders { get; }
+        public UpgradeManager Upgrades { get; }
 
         /// <summary>Short user-facing message (space/energy warnings...).</summary>
         public event Action<string> ToastRequested;
@@ -42,6 +43,7 @@ namespace MergeCafe.Core
             Economy = new EconomyManager();
             Orders = new OrderManager(rng01);
             Orders.SetupInitialOrders();
+            Upgrades = new UpgradeManager();
         }
 
         public bool IsTypeUnlocked(ItemType type) => Generators.Get(type).Unlocked;
@@ -94,6 +96,60 @@ namespace MergeCafe.Core
             state.Unlocked = true;
             Generators.RaiseStatesChanged();
             Toast($"{state.Definition.DisplayName} 해금!");
+            return true;
+        }
+
+        /// <summary>Unlocks the next locked board cell for gold (§13 보드 확장).</summary>
+        public bool RequestExpandBoard()
+        {
+            if (UpgradeManager.IsBoardFullyUnlocked(Board))
+            {
+                Toast("보드가 모두 열려 있습니다");
+                return false;
+            }
+
+            int cost = Upgrades.NextCellCost;
+            if (!Economy.CanAfford(cost))
+            {
+                Toast($"골드가 부족합니다 (확장 {cost} 골드)");
+                return false;
+            }
+
+            if (!Upgrades.TryExpandBoard(Board, Economy))
+                return false;
+
+            Toast("보드 칸이 열렸습니다!");
+            return true;
+        }
+
+        /// <summary>Raises a generator's upgrade level for gold (§11 업그레이드 규칙).</summary>
+        public bool RequestUpgradeGenerator(ItemType type)
+        {
+            GeneratorState state = Generators.Get(type);
+            if (!state.Unlocked)
+            {
+                Toast("먼저 생성기를 해금하세요");
+                return false;
+            }
+
+            if (state.UpgradeLevel >= GeneratorCatalog.MaxUpgradeLevel)
+            {
+                Toast("이미 최대 강화 상태입니다");
+                return false;
+            }
+
+            int cost = GeneratorCatalog.UpgradeCost(state.UpgradeLevel + 1);
+            if (!Economy.CanAfford(cost))
+            {
+                Toast($"골드가 부족합니다 (강화 {cost} 골드)");
+                return false;
+            }
+
+            if (!Upgrades.TryUpgradeGenerator(state, Economy))
+                return false;
+
+            Generators.RaiseStatesChanged();
+            Toast($"{state.Definition.DisplayName} 강화 완료 (Lv.{state.UpgradeLevel})");
             return true;
         }
 
