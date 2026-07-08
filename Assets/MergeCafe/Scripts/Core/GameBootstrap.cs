@@ -29,7 +29,11 @@ namespace MergeCafe.Core
 
         private void Awake()
         {
+#if !UNITY_WEBGL
+            // On WebGL the default (-1) uses requestAnimationFrame — forcing 60
+            // would switch Unity to a janky setTimeout loop.
             Application.targetFrameRate = 60;
+#endif
 
             UIFactory.EnsureEventSystem();
             _ui = UIFactory.BuildBaseLayout();
@@ -49,6 +53,12 @@ namespace MergeCafe.Core
             _toast = ToastView.Build(_ui.ToastLayer);
             _game.ToastRequested += message => _toast.Show(message);
             _game.ItemSpawned += index => _gridView.PlayPop(index);
+            _game.ItemMerged += index =>
+            {
+                _gridView.PlayPop(index);
+                _gridView.PlayMergeFlash(index);
+            };
+            _game.OrderCompleted += order => _toast.FloatGold($"+{order.rewardGold} 골드");
 
             GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Coffee, 0);
             GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Bread, 1);

@@ -16,8 +16,23 @@ namespace MergeCafe.Board
     {
         private BoardManager _board;
         private readonly BoardCell[] _cells = new BoardCell[BoardManager.CellCount];
+        private int _suppressedTokenIndex = -1;
 
         public RectTransform Container => (RectTransform)transform;
+
+        /// <summary>
+        /// While a drag is active, the origin cell's token stays hidden no matter
+        /// which code path refreshes that cell. Pass -1 to clear.
+        /// </summary>
+        public void SetSuppressedTokenIndex(int index)
+        {
+            int previous = _suppressedTokenIndex;
+            _suppressedTokenIndex = index;
+            if (previous >= 0 && previous != index)
+                RefreshCell(previous);
+            if (index >= 0)
+                RefreshCell(index);
+        }
 
         public static BoardGridView Build(RectTransform boardPanel, BoardManager board)
         {
@@ -78,9 +93,14 @@ namespace MergeCafe.Board
             // Keep the token child in sync with the board model.
             ItemInstance item = _board.GetItem(index);
             if (item != null)
-                ItemTokenView.CreateOrUpdate(cell, item);
+            {
+                ItemTokenView token = ItemTokenView.CreateOrUpdate(cell, item);
+                token.gameObject.SetActive(index != _suppressedTokenIndex);
+            }
             else
+            {
                 ItemTokenView.RemoveFrom(cell);
+            }
         }
 
         // ---- Small feedback animations (webGL_game.md §16) ----
@@ -136,19 +156,52 @@ namespace MergeCafe.Board
 
         private static IEnumerator ShakeRoutine(Transform token)
         {
+            // A token at rest always sits at anchoredPosition (0,0) (symmetric stretch
+            // offsets), so overlapping shakes can safely restore to zero.
             var rect = (RectTransform)token;
-            Vector2 basePosition = rect.anchoredPosition;
             const float duration = 0.22f;
             for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
             {
                 if (rect == null)
                     yield break;
                 float offset = Mathf.Sin(t * 60f) * 6f * (1f - t / duration);
-                rect.anchoredPosition = basePosition + new Vector2(offset, 0f);
+                rect.anchoredPosition = new Vector2(offset, 0f);
                 yield return null;
             }
             if (rect != null)
-                rect.anchoredPosition = basePosition;
+                rect.anchoredPosition = Vector2.zero;
+        }
+
+        /// <summary>Expanding white flash over a cell — merge success feedback (§16).</summary>
+        public void PlayMergeFlash(int index)
+        {
+            BoardCell cell = GetCell(index);
+            if (cell != null)
+                StartCoroutine(MergeFlashRoutine(cell));
+        }
+
+        private IEnumerator MergeFlashRoutine(BoardCell cell)
+        {
+            Image flash = UIFactory.CreateImage(cell.transform, "MergeFlash", Color.white);
+            flash.sprite = SpriteFactory.Circle;
+            flash.raycastTarget = false;
+            var rect = (RectTransform)flash.transform;
+            UIFactory.Stretch(rect);
+            rect.offsetMin = new Vector2(6f, 6f);
+            rect.offsetMax = new Vector2(-6f, -6f);
+
+            const float duration = 0.28f;
+            for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
+            {
+                if (flash == null)
+                    yield break;
+                float p = t / duration;
+                flash.color = new Color(1f, 1f, 1f, 0.8f * (1f - p));
+                flash.transform.localScale = Vector3.one * (1f + 0.45f * p);
+                yield return null;
+            }
+            if (flash != null)
+                Destroy(flash.gameObject);
         }
 
         private IEnumerator RejectRoutine(BoardCell cell)

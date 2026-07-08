@@ -57,6 +57,38 @@ namespace MergeCafe.UI
             _routine = StartCoroutine(Animate(duration));
         }
 
+        /// <summary>Floating "+N 골드" text rising above the board (§16 주문 완료 피드백).</summary>
+        public void FloatGold(string message)
+        {
+            Text text = UIFactory.CreateText(transform.parent, "GoldFloat", message, 36,
+                UITheme.TextGold, TextAnchor.MiddleCenter, FontStyle.Bold);
+            text.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1.5f, -1.5f);
+
+            var rect = (RectTransform)text.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(420f, 64f);
+            rect.anchoredPosition = new Vector2(0f, 240f);
+
+            StartCoroutine(FloatGoldRoutine(text, rect));
+        }
+
+        private static IEnumerator FloatGoldRoutine(Text text, RectTransform rect)
+        {
+            const float duration = 0.9f;
+            Color baseColor = text.color;
+            for (float t = 0f; t < duration; t += Time.unscaledDeltaTime)
+            {
+                if (text == null)
+                    yield break;
+                float p = t / duration;
+                rect.anchoredPosition = new Vector2(0f, 240f + 90f * p);
+                text.color = new Color(baseColor.r, baseColor.g, baseColor.b, 1f - p * p);
+                yield return null;
+            }
+            if (text != null)
+                Object.Destroy(text.gameObject);
+        }
+
         private IEnumerator Animate(float duration)
         {
             const float fadeIn = 0.12f;

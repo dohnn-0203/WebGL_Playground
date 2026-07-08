@@ -19,6 +19,8 @@ namespace MergeCafe.Generators
         private Text _nameText;
         private Text _energyText;
         private Text _statusText;
+        private Image _energyBarBg;
+        private RectTransform _energyBarFill;
 
         public static GeneratorButtonView Build(RectTransform generatorPanel, GameManager game,
             ItemType type, int slotIndex)
@@ -57,7 +59,24 @@ namespace MergeCafe.Generators
 
             view._statusText = UIFactory.CreateText(rect, "Status", "", 20, UITheme.TextDim,
                 TextAnchor.MiddleLeft);
-            SetRow((RectTransform)view._statusText.transform, 0f, 0.32f);
+            SetRow((RectTransform)view._statusText.transform, 0.10f, 0.34f);
+
+            // Thin energy gauge along the bottom edge.
+            view._energyBarBg = UIFactory.CreateImage(rect, "EnergyBarBg", new Color(0f, 0f, 0f, 0.35f));
+            view._energyBarBg.raycastTarget = false;
+            var barRect = (RectTransform)view._energyBarBg.transform;
+            barRect.anchorMin = new Vector2(0f, 0f);
+            barRect.anchorMax = new Vector2(1f, 0f);
+            barRect.offsetMin = new Vector2(20f, 8f);
+            barRect.offsetMax = new Vector2(-14f, 16f);
+
+            Image fill = UIFactory.CreateImage(barRect, "Fill", UITheme.TextGold);
+            fill.raycastTarget = false;
+            view._energyBarFill = (RectTransform)fill.transform;
+            view._energyBarFill.anchorMin = Vector2.zero;
+            view._energyBarFill.anchorMax = new Vector2(1f, 1f);
+            view._energyBarFill.offsetMin = Vector2.zero;
+            view._energyBarFill.offsetMax = Vector2.zero;
 
             button.onClick.AddListener(view.OnClick);
             view.Refresh(TimeUtil.NowUnixSeconds());
@@ -94,15 +113,22 @@ namespace MergeCafe.Generators
                 _nameText.text = $"{def.DisplayName} (잠김)";
                 _energyText.text = $"생산: {output.DisplayName}";
                 _statusText.text = $"{def.UnlockCost} 골드로 해금";
+                _energyBarBg.gameObject.SetActive(false);
                 return;
             }
 
             _background.color = UITheme.ButtonPrimary;
-            _nameText.text = def.DisplayName;
+            _nameText.text = state.UpgradeLevel > 1
+                ? $"{def.DisplayName} Lv.{state.UpgradeLevel}"
+                : def.DisplayName;
             _energyText.text = $"에너지 {state.Energy}/{state.MaxEnergy}";
             _statusText.text = state.Energy >= state.MaxEnergy
                 ? $"가득 참 · 생산: {output.DisplayName}"
                 : $"다음 회복 {Mathf.CeilToInt((float)state.SecondsToNextRecovery(nowUnix))}초";
+
+            _energyBarBg.gameObject.SetActive(true);
+            float ratio = state.MaxEnergy > 0 ? Mathf.Clamp01(state.Energy / (float)state.MaxEnergy) : 0f;
+            _energyBarFill.anchorMax = new Vector2(ratio, 1f);
         }
     }
 }
