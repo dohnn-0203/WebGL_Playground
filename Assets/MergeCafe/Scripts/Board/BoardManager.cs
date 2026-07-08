@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MergeCafe.Data;
 
 namespace MergeCafe.Board
@@ -126,6 +127,41 @@ namespace MergeCafe.Board
                     return i;
             }
             return -1;
+        }
+
+        /// <summary>All currently unlocked cell indices (for saving).</summary>
+        public List<int> GetUnlockedCells()
+        {
+            var result = new List<int>();
+            for (int i = 0; i < CellCount; i++)
+            {
+                if (_unlocked[i])
+                    result.Add(i);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Bulk restore for save loading: clears every item, applies the given lock
+        /// set, then notifies once per cell so views resync.
+        /// </summary>
+        public void ResetForLoad(IEnumerable<int> unlockedIndices)
+        {
+            for (int i = 0; i < CellCount; i++)
+            {
+                _items[i] = null;
+                _unlocked[i] = false;
+            }
+
+            foreach (int index in unlockedIndices)
+            {
+                if (index >= 0 && index < CellCount)
+                    _unlocked[index] = true;
+            }
+
+            for (int i = 0; i < CellCount; i++)
+                CellChanged?.Invoke(i);
+            BoardChanged?.Invoke();
         }
 
         private void RaiseCellChanged(int index)

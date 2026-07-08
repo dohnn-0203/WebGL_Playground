@@ -41,7 +41,14 @@ namespace MergeCafe.Items
         {
             Transform existing = cell.transform.Find(TokenName);
             if (existing != null)
+            {
+                // Destroy() is deferred to end of frame; rename + detach immediately so a
+                // same-frame CreateOrUpdate (e.g. merge: remove → place) never finds and
+                // rebinds a token that is about to be destroyed.
+                existing.name = TokenName + "_Removed";
+                existing.SetParent(null, false);
                 Destroy(existing.gameObject);
+            }
         }
 
         private static ItemTokenView Create(BoardCell cell)

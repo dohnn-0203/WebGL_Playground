@@ -3,8 +3,10 @@ using MergeCafe.Data;
 using MergeCafe.Generators;
 using MergeCafe.Items;
 using MergeCafe.Orders;
+using MergeCafe.Save;
 using MergeCafe.UI;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace MergeCafe.Core
 {
@@ -21,6 +23,9 @@ namespace MergeCafe.Core
         private BoardGridView _gridView;
         private ToastView _toast;
         private OrderCardView[] _orderCards;
+
+        /// <summary>Exposed for play-mode tests.</summary>
+        public GameManager Game => _game;
 
         private void Awake()
         {
@@ -63,6 +68,37 @@ namespace MergeCafe.Core
             RefreshHudSpace();
 
             UpgradePanelView.Build(_ui.UpgradePanel, _game);
+
+            // Restore progress (if any), then autosave after every successful action (§14).
+            SaveManager.TryLoadInto(_game, TimeUtil.NowUnixSeconds());
+            _game.StateChanged += () => SaveManager.Save(_game);
+
+            _hud.SettingsButton.onClick.AddListener(ShowResetPopup);
+        }
+
+        private void ShowResetPopup()
+        {
+            ConfirmPopup.Show(_ui.PopupLayer, "게임 초기화",
+                "저장된 진행 상황이 모두 삭제됩니다.\n계속할까요?", ResetGame);
+        }
+
+        private void ResetGame()
+        {
+            SaveManager.Delete();
+            SceneManager.LoadScene(gameObject.scene.buildIndex);
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            // Best effort save when the browser tab loses focus / page is left (§14).
+            if (paused && _game != null)
+                SaveManager.Save(_game);
+        }
+
+        private void OnApplicationQuit()
+        {
+            if (_game != null)
+                SaveManager.Save(_game);
         }
 
         private void Update()

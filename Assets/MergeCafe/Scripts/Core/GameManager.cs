@@ -36,6 +36,12 @@ namespace MergeCafe.Core
         /// <summary>The order that was just delivered (reward already paid).</summary>
         public event Action<CafeOrder> OrderCompleted;
 
+        /// <summary>
+        /// Raised after every successful state-mutating player action — the
+        /// autosave hook of webGL_game.md §14 (저장 타이밍).
+        /// </summary>
+        public event Action StateChanged;
+
         public GameManager(double nowUnix, Func<float> rng01 = null)
         {
             Board = new BoardManager();
@@ -61,6 +67,7 @@ namespace MergeCafe.Core
             {
                 case SpawnResultCode.Ok:
                     ItemSpawned?.Invoke(result.CellIndex);
+                    StateChanged?.Invoke();
                     return true;
 
                 case SpawnResultCode.BoardFull:
@@ -96,6 +103,7 @@ namespace MergeCafe.Core
             state.Unlocked = true;
             Generators.RaiseStatesChanged();
             Toast($"{state.Definition.DisplayName} 해금!");
+            StateChanged?.Invoke();
             return true;
         }
 
@@ -119,6 +127,7 @@ namespace MergeCafe.Core
                 return false;
 
             Toast("보드 칸이 열렸습니다!");
+            StateChanged?.Invoke();
             return true;
         }
 
@@ -150,6 +159,7 @@ namespace MergeCafe.Core
 
             Generators.RaiseStatesChanged();
             Toast($"{state.Definition.DisplayName} 강화 완료 (Lv.{state.UpgradeLevel})");
+            StateChanged?.Invoke();
             return true;
         }
 
@@ -166,6 +176,7 @@ namespace MergeCafe.Core
 
             OrderCompleted?.Invoke(order);
             Toast($"주문 완료! +{reward} 골드");
+            StateChanged?.Invoke();
             return true;
         }
 
@@ -177,9 +188,11 @@ namespace MergeCafe.Core
             {
                 case MoveOutcome.Merged:
                     ItemMerged?.Invoke(toIndex);
+                    StateChanged?.Invoke();
                     break;
                 case MoveOutcome.MovedToEmpty:
                     ItemMoved?.Invoke(fromIndex, toIndex);
+                    StateChanged?.Invoke();
                     break;
                 case MoveOutcome.RejectedMaxLevel:
                     Toast("이미 최고 레벨입니다");
