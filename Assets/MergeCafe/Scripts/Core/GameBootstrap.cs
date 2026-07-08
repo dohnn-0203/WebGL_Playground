@@ -1,4 +1,6 @@
 using MergeCafe.Board;
+using MergeCafe.Data;
+using MergeCafe.Generators;
 using MergeCafe.UI;
 using UnityEngine;
 
@@ -13,8 +15,9 @@ namespace MergeCafe.Core
     {
         private UiLayout _ui;
         private HudView _hud;
-        private BoardManager _board;
+        private GameManager _game;
         private BoardGridView _gridView;
+        private ToastView _toast;
 
         private void Awake()
         {
@@ -29,10 +32,17 @@ namespace MergeCafe.Core
             UIFactory.CreatePanelTitle(_ui.GeneratorPanel, "생성기");
             UIFactory.CreatePanelTitle(_ui.OrderPanel, "주문");
 
-            _board = new BoardManager();
-            _gridView = BoardGridView.Build(_ui.BoardPanel, _board);
+            _game = new GameManager(TimeUtil.NowUnixSeconds());
+            _gridView = BoardGridView.Build(_ui.BoardPanel, _game.Board);
 
-            _board.BoardChanged += RefreshHudSpace;
+            _toast = ToastView.Build(_ui.ToastLayer);
+            _game.ToastRequested += message => _toast.Show(message);
+
+            GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Coffee, 0);
+            GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Bread, 1);
+            GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Dessert, 2);
+
+            _game.Board.BoardChanged += RefreshHudSpace;
             RefreshHudSpace();
 
             var upgradePlaceholder = UIFactory.CreateText(_ui.UpgradePanel, "UpgradePlaceholder",
@@ -40,9 +50,14 @@ namespace MergeCafe.Core
             UIFactory.Stretch((RectTransform)upgradePlaceholder.transform);
         }
 
+        private void Update()
+        {
+            _game.Tick(TimeUtil.NowUnixSeconds());
+        }
+
         private void RefreshHudSpace()
         {
-            _hud.SetBoardSpace(_board.EmptyUnlockedCount, _board.UnlockedCount);
+            _hud.SetBoardSpace(_game.Board.EmptyUnlockedCount, _game.Board.UnlockedCount);
         }
     }
 }

@@ -1,3 +1,5 @@
+using MergeCafe.Data;
+using MergeCafe.Items;
 using MergeCafe.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -64,6 +66,13 @@ namespace MergeCafe.Board
                 return;
 
             cell.SetVisual(_board.IsUnlocked(index) ? CellVisual.Open : CellVisual.Locked);
+
+            // Keep the token child in sync with the board model.
+            ItemInstance item = _board.GetItem(index);
+            if (item != null)
+                ItemTokenView.CreateOrUpdate(cell, item);
+            else
+                ItemTokenView.RemoveFrom(cell);
         }
 
         private void OnDestroy()
