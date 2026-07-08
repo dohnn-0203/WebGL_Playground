@@ -1,8 +1,10 @@
 using System;
 using MergeCafe.Board;
 using MergeCafe.Data;
+using MergeCafe.Economy;
 using MergeCafe.Generators;
 using MergeCafe.Items;
+using MergeCafe.Orders;
 using UnityEngine;
 
 namespace MergeCafe.Core
@@ -15,6 +17,8 @@ namespace MergeCafe.Core
     {
         public BoardManager Board { get; }
         public GeneratorManager Generators { get; }
+        public EconomyManager Economy { get; }
+        public OrderManager Orders { get; }
 
         /// <summary>Short user-facing message (space/energy warnings...).</summary>
         public event Action<string> ToastRequested;
@@ -28,11 +32,19 @@ namespace MergeCafe.Core
         /// <summary>(from, to) after a simple move to an empty cell.</summary>
         public event Action<int, int> ItemMoved;
 
+        /// <summary>The order that was just delivered (reward already paid).</summary>
+        public event Action<CafeOrder> OrderCompleted;
+
         public GameManager(double nowUnix, Func<float> rng01 = null)
         {
             Board = new BoardManager();
             Generators = new GeneratorManager(nowUnix, rng01);
+            Economy = new EconomyManager();
+            Orders = new OrderManager(rng01);
+            Orders.SetupInitialOrders();
         }
+
+        public bool IsTypeUnlocked(ItemType type) => Generators.Get(type).Unlocked;
 
         public void Tick(double nowUnix)
         {
@@ -60,9 +72,45 @@ namespace MergeCafe.Core
                     return false;
 
                 default:
-                    Toast($"{GeneratorCatalog.For(type).UnlockCost} 골드로 해금할 수 있습니다");
-                    return false;
+                    // Clicking a locked generator tries to unlock it with gold (§13).
+                    return RequestUnlockGenerator(type);
             }
+        }
+
+        /// <summary>Spends gold to unlock the oven / fridge (webGL_game.md §11, §13).</summary>
+        public bool RequestUnlockGenerator(ItemType type)
+        {
+            GeneratorState state = Generators.Get(type);
+            if (state.Unlocked)
+                return false;
+
+            int cost = state.Definition.UnlockCost;
+            if (!Economy.TrySpend(cost))
+            {
+                Toast($"골드가 부족합니다 (해금 {cost} 골드)");
+                return false;
+            }
+
+            state.Unlocked = true;
+            Generators.RaiseStatesChanged();
+            Toast($"{state.Definition.DisplayName} 해금!");
+            return true;
+        }
+
+        /// <summary>Player pressed the complete button of an order card (§12).</summary>
+        public bool RequestCompleteOrder(string orderId)
+        {
+            CafeOrder order = Orders.Find(orderId);
+            if (order == null)
+                return false;
+
+            int reward = order.rewardGold;
+            if (!Orders.TryComplete(orderId, Board, Economy, IsTypeUnlocked))
+                return false;
+
+            OrderCompleted?.Invoke(order);
+            Toast($"주문 완료! +{reward} 골드");
+            return true;
         }
 
         /// <summary>Player dropped the item at fromIndex onto toIndex (webGL_game.md §9).</summary>

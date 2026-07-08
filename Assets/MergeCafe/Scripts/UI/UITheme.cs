@@ -33,6 +33,9 @@ namespace MergeCafe.UI
         public static readonly Color CellHighlight = Hex("E0A458");
         public static readonly Color CellReject = Hex("B5543B");
 
+        // ---- Cards ----
+        public static readonly Color CardBg = Hex("372B22");
+
         // ---- Buttons ----
         public static readonly Color ButtonPrimary = Hex("8C5E3C");
         public static readonly Color ButtonSecondary = Hex("5B4636");

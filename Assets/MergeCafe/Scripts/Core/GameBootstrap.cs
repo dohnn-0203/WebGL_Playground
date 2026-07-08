@@ -2,6 +2,7 @@ using MergeCafe.Board;
 using MergeCafe.Data;
 using MergeCafe.Generators;
 using MergeCafe.Items;
+using MergeCafe.Orders;
 using MergeCafe.UI;
 using UnityEngine;
 
@@ -19,6 +20,7 @@ namespace MergeCafe.Core
         private GameManager _game;
         private BoardGridView _gridView;
         private ToastView _toast;
+        private OrderCardView[] _orderCards;
 
         private void Awake()
         {
@@ -47,6 +49,16 @@ namespace MergeCafe.Core
             GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Bread, 1);
             GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Dessert, 2);
 
+            _orderCards = new OrderCardView[OrderManager.OrderCount];
+            for (int i = 0; i < OrderManager.OrderCount; i++)
+                _orderCards[i] = OrderCardView.Build(_ui.OrderPanel, _game, i);
+
+            _game.Orders.OrdersChanged += RebindOrderCards;
+            _game.Board.BoardChanged += RefreshOrderButtons;
+
+            _game.Economy.GoldChanged += gold => _hud.SetGold(gold);
+            _hud.SetGold(_game.Economy.Gold);
+
             _game.Board.BoardChanged += RefreshHudSpace;
             RefreshHudSpace();
 
@@ -63,6 +75,18 @@ namespace MergeCafe.Core
         private void RefreshHudSpace()
         {
             _hud.SetBoardSpace(_game.Board.EmptyUnlockedCount, _game.Board.UnlockedCount);
+        }
+
+        private void RebindOrderCards()
+        {
+            foreach (OrderCardView card in _orderCards)
+                card.Rebind();
+        }
+
+        private void RefreshOrderButtons()
+        {
+            foreach (OrderCardView card in _orderCards)
+                card.RefreshButton();
         }
     }
 }
