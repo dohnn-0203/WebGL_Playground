@@ -1,5 +1,6 @@
 using MergeCafe.UI;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace MergeCafe.Board
@@ -12,11 +13,21 @@ namespace MergeCafe.Board
         Reject
     }
 
+    /// <summary>Receives the drag life cycle events raised by board cells.</summary>
+    public interface IBoardDragHandler
+    {
+        void OnCellBeginDrag(BoardCell cell, PointerEventData eventData);
+        void OnCellDrag(PointerEventData eventData);
+        void OnCellEndDrag(PointerEventData eventData);
+    }
+
     /// <summary>
     /// UI for a single board cell. Items dropped onto the board are resolved by
     /// raycasting against this cell's background image (webGL_game.md §15).
+    /// Drag begins on the cell that holds the item (tokens don't raycast).
     /// </summary>
-    public sealed class BoardCell : MonoBehaviour
+    public sealed class BoardCell : MonoBehaviour,
+        IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         public int Index { get; private set; }
 
@@ -24,6 +35,7 @@ namespace MergeCafe.Board
 
         private Image _background;
         private CellVisual _visual;
+        private IBoardDragHandler _dragHandler;
 
         /// <summary>
         /// Creates one cell as a child of the (square) board container using fractional
@@ -73,5 +85,25 @@ namespace MergeCafe.Board
         }
 
         public CellVisual Visual => _visual;
+
+        public void SetDragHandler(IBoardDragHandler handler)
+        {
+            _dragHandler = handler;
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            _dragHandler?.OnCellBeginDrag(this, eventData);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            _dragHandler?.OnCellDrag(eventData);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            _dragHandler?.OnCellEndDrag(eventData);
+        }
     }
 }

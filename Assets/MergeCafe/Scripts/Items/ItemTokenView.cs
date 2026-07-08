@@ -29,6 +29,10 @@ namespace MergeCafe.Items
             if (view == null)
                 view = Create(cell);
 
+            // A drag may have hidden the token; refresh always restores visibility.
+            if (!view.gameObject.activeSelf)
+                view.gameObject.SetActive(true);
+
             view.Bind(item);
             return view;
         }

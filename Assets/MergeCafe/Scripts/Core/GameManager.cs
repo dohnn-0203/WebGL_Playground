@@ -2,6 +2,7 @@ using System;
 using MergeCafe.Board;
 using MergeCafe.Data;
 using MergeCafe.Generators;
+using MergeCafe.Items;
 using UnityEngine;
 
 namespace MergeCafe.Core
@@ -20,6 +21,12 @@ namespace MergeCafe.Core
 
         /// <summary>Cell index that just received a freshly generated item.</summary>
         public event Action<int> ItemSpawned;
+
+        /// <summary>Cell index holding the item that was just upgraded by a merge.</summary>
+        public event Action<int> ItemMerged;
+
+        /// <summary>(from, to) after a simple move to an empty cell.</summary>
+        public event Action<int, int> ItemMoved;
 
         public GameManager(double nowUnix, Func<float> rng01 = null)
         {
@@ -56,6 +63,25 @@ namespace MergeCafe.Core
                     Toast($"{GeneratorCatalog.For(type).UnlockCost} 골드로 해금할 수 있습니다");
                     return false;
             }
+        }
+
+        /// <summary>Player dropped the item at fromIndex onto toIndex (webGL_game.md §9).</summary>
+        public MoveOutcome RequestMove(int fromIndex, int toIndex)
+        {
+            MoveOutcome outcome = MergeResolver.Resolve(Board, fromIndex, toIndex);
+            switch (outcome)
+            {
+                case MoveOutcome.Merged:
+                    ItemMerged?.Invoke(toIndex);
+                    break;
+                case MoveOutcome.MovedToEmpty:
+                    ItemMoved?.Invoke(fromIndex, toIndex);
+                    break;
+                case MoveOutcome.RejectedMaxLevel:
+                    Toast("이미 최고 레벨입니다");
+                    break;
+            }
+            return outcome;
         }
 
         internal void Toast(string message)

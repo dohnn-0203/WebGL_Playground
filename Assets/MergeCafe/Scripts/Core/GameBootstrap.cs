@@ -1,6 +1,7 @@
 using MergeCafe.Board;
 using MergeCafe.Data;
 using MergeCafe.Generators;
+using MergeCafe.Items;
 using MergeCafe.UI;
 using UnityEngine;
 
@@ -35,8 +36,12 @@ namespace MergeCafe.Core
             _game = new GameManager(TimeUtil.NowUnixSeconds());
             _gridView = BoardGridView.Build(_ui.BoardPanel, _game.Board);
 
+            var dragController = DragController.Build(_ui.DragLayer, _game, _gridView);
+            _gridView.SetDragHandler(dragController);
+
             _toast = ToastView.Build(_ui.ToastLayer);
             _game.ToastRequested += message => _toast.Show(message);
+            _game.ItemSpawned += index => _gridView.PlayPop(index);
 
             GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Coffee, 0);
             GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Bread, 1);
