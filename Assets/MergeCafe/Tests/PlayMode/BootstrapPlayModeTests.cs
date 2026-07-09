@@ -173,15 +173,15 @@ namespace MergeCafe.Tests
 
             var title = Object.FindObjectOfType<MergeCafe.UI.TitleScreenView>();
             Assert.IsNotNull(title, "title screen view present");
-            Assert.IsNull(bootstrap.Game, "game not started before click");
+            Assert.IsNull(bootstrap.Game, "game not started before selection");
 
-            // Simulate the click on the title screen.
-            title.OnPointerClick(new PointerEventData(EventSystem.current));
+            // Select the merge-game card.
+            title.SelectMerge();
             yield return null;
 
-            Assert.IsNotNull(bootstrap.Game, "game started after click");
-            Assert.IsNull(GameObject.Find("TitleCanvas"), "title screen removed after click");
-            Assert.IsNotNull(GameObject.Find("Canvas"), "game canvas built after click");
+            Assert.IsNotNull(bootstrap.Game, "game started after selection");
+            Assert.IsNull(GameObject.Find("TitleCanvas"), "title screen removed after selection");
+            Assert.IsNotNull(GameObject.Find("Canvas"), "game canvas built after selection");
         }
     }
 }
