@@ -7,6 +7,7 @@
         "App.Runtime",
         "MergeCafe.Runtime",
         "Suika.Runtime",
+        "BubbleShooter.Runtime",
         "Common.Runtime",
         "Unity.TextMeshPro"
     ],

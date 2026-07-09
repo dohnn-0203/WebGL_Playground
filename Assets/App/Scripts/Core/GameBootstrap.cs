@@ -3,6 +3,7 @@ using MergeCafe.Data;
 using MergeCafe.Generators;
 using MergeCafe.Items;
 using MergeCafe.Orders;
+using MergeCafe.Bubble;
 using MergeCafe.Save;
 using MergeCafe.Suika;
 using MergeCafe.UI;
@@ -26,12 +27,16 @@ namespace MergeCafe.Core
         private ToastView _toast;
         private OrderCardView[] _orderCards;
         private SuikaGame _suika;
+        private BubbleShooterGame _bubble;
 
         /// <summary>Exposed for play-mode tests.</summary>
         public GameManager Game => _game;
 
         /// <summary>Exposed for play-mode tests.</summary>
         public SuikaGame Suika => _suika;
+
+        /// <summary>Exposed for play-mode tests.</summary>
+        public BubbleShooterGame Bubble => _bubble;
 
         private void Awake()
         {
@@ -44,13 +49,21 @@ namespace MergeCafe.Core
             UIFactory.EnsureEventSystem();
 
             // Show the game-select hub; a game is built when the player picks a card.
-            TitleScreenView.Build(StartGame, StartSuika);
+            TitleScreenView.Build(StartGame, StartSuika, StartBubble);
+        }
+
+        /// <summary>Builds the bubble shooter. Idempotent.</summary>
+        public void StartBubble()
+        {
+            if (_game != null || _suika != null || _bubble != null)
+                return;
+            _bubble = BubbleShooterGame.Create();
         }
 
         /// <summary>Builds the watermelon game. Idempotent.</summary>
         public void StartSuika()
         {
-            if (_game != null || _suika != null)
+            if (_game != null || _suika != null || _bubble != null)
                 return;
             _suika = SuikaGame.Create();
         }
@@ -58,7 +71,7 @@ namespace MergeCafe.Core
         /// <summary>Builds the full game. Idempotent; called by the title screen click (or tests).</summary>
         public void StartGame()
         {
-            if (_game != null)
+            if (_game != null || _suika != null || _bubble != null)
                 return;
 
             _ui = UIFactory.BuildBaseLayout();

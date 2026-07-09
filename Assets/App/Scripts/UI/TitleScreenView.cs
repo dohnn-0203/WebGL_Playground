@@ -15,6 +15,7 @@ namespace MergeCafe.UI
     {
         private Action _onStartMerge;
         private Action _onStartSuika;
+        private Action _onStartBubble;
         private bool _started;
         private TextMeshProUGUI _notice;
         private Coroutine _noticeRoutine;
@@ -25,7 +26,7 @@ namespace MergeCafe.UI
         private static readonly Color CardBg = Hex("2E2420");
         private static readonly Color CardLocked = Hex("241C18");
 
-        public static TitleScreenView Build(Action onStartMerge, Action onStartSuika)
+        public static TitleScreenView Build(Action onStartMerge, Action onStartSuika, Action onStartBubble)
         {
             var canvasGo = new GameObject("TitleCanvas");
             canvasGo.layer = LayerMask.NameToLayer("UI");
@@ -49,6 +50,7 @@ namespace MergeCafe.UI
             var view = bg.gameObject.AddComponent<TitleScreenView>();
             view._onStartMerge = onStartMerge;
             view._onStartSuika = onStartSuika;
+            view._onStartBubble = onStartBubble;
             var content = (RectTransform)bg.transform;
 
             Image glow = UIFactory.CreateImage(content, "Glow",
@@ -78,7 +80,8 @@ namespace MergeCafe.UI
                 CafeArt.CoffeeCup, UITheme.TextGold);
             view.BuildCard(content, 0f, "수박게임", "플레이 가능", true, view.SelectSuika,
                 Suika.SuikaFruitSprites.Fruit(11), Color.white);
-            view.BuildCard(content, cardW + gap, "개발중", "", false, view.ShowComingSoon, null, Color.white);
+            view.BuildCard(content, cardW + gap, "버블슈터", "플레이 가능", true, view.SelectBubble,
+                Bubble.BubbleSprites.Bubble(1), Color.white);
 
             view._notice = UIFactory.CreateText(content, "Notice", "", 32, UITheme.TextMain,
                 TextAnchor.MiddleCenter);
@@ -164,6 +167,9 @@ namespace MergeCafe.UI
 
         /// <summary>Starts the watermelon game.</summary>
         public void SelectSuika() => Select(_onStartSuika);
+
+        /// <summary>Starts the bubble shooter.</summary>
+        public void SelectBubble() => Select(_onStartBubble);
 
         private void Select(Action start)
         {

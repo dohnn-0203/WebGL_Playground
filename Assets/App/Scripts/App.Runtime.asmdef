@@ -5,6 +5,7 @@
         "Common.Runtime",
         "MergeCafe.Runtime",
         "Suika.Runtime",
+        "BubbleShooter.Runtime",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],

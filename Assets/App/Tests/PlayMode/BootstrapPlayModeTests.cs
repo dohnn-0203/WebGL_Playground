@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using MergeCafe.Board;
+using MergeCafe.Bubble;
 using MergeCafe.Core;
 using MergeCafe.Data;
 using MergeCafe.Orders;
@@ -163,6 +164,34 @@ namespace MergeCafe.Tests
                 yield return null;
 
             Assert.IsNotNull(game.Board); // reached here → no stack overflow along these paths
+        }
+
+        [UnityTest]
+        public IEnumerator Bubble_ThreeSameColorPop_AndScore()
+        {
+            var game = BubbleShooterGame.Create();
+            yield return null;
+
+            Assert.AreEqual(0, game.Score);
+            // Rows 7-8 are empty (initial board fills rows 0-5); place an isolated trio.
+            game.TestLand(7, 0, 0);
+            game.TestLand(7, 1, 0);
+            Assert.IsTrue(game.Grid.IsOccupied(7, 0), "not popped yet at 2");
+            game.TestLand(8, 0, 0); // completes the group of 3 → pop
+            yield return null;
+
+            Assert.IsFalse(game.Grid.IsOccupied(7, 0), "trio popped");
+            Assert.IsFalse(game.Grid.IsOccupied(7, 1));
+            Assert.IsFalse(game.Grid.IsOccupied(8, 0));
+            Assert.AreEqual(30, game.Score, "3 bubbles x 10");
+
+            foreach (string n in new[] { "BubbleShooterGame", "BubbleRoot", "BubbleHud" })
+            {
+                var go = GameObject.Find(n);
+                if (go != null) Object.Destroy(go);
+            }
+            var es = Object.FindObjectOfType<EventSystem>();
+            if (es != null) Object.Destroy(es.gameObject);
         }
 
         [UnityTest]
