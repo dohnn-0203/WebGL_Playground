@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MergeCafe.Board;
 using MergeCafe.Data;
 
@@ -33,15 +34,21 @@ namespace MergeCafe.Generators
     /// </summary>
     public sealed class GeneratorManager
     {
+        /// <summary>Produced items drop into a free cell within this Chebyshev radius of the generator.</summary>
+        public const int SpawnRadius = 2;
+
         public EnergyPool Energy { get; }
+
+        private readonly Func<float> _rng01;
 
         /// <summary>Raised when the shared energy changes.</summary>
         public event Action StatesChanged;
 
-        public GeneratorManager(double nowUnix)
+        public GeneratorManager(double nowUnix, Func<float> rng01 = null)
         {
             Energy = new EnergyPool(nowUnix);
             Energy.Changed += () => StatesChanged?.Invoke();
+            _rng01 = rng01 ?? (() => UnityEngine.Random.value);
         }
 
         /// <summary>Places the three generator tiles on their starting cells.</summary>
@@ -60,11 +67,17 @@ namespace MergeCafe.Generators
             return Energy.Recover(nowUnix);
         }
 
-        public SpawnResult TrySpawn(ItemType type, BoardManager board, double nowUnix)
+        /// <summary>
+        /// Produces the generator's item into a random free cell near <paramref name="originCell"/>
+        /// (the generator's own cell). Falls back to the closest free cell if the neighbourhood is full.
+        /// </summary>
+        public SpawnResult TrySpawn(ItemType type, BoardManager board, int originCell, double nowUnix)
         {
             if (!Energy.HasEnergy)
                 return SpawnResult.Fail(SpawnResultCode.NoEnergy);
-            if (!board.TryFindEmptyCell(out int cellIndex))
+
+            int cellIndex = PickSpawnCell(board, originCell);
+            if (cellIndex < 0)
                 return SpawnResult.Fail(SpawnResultCode.BoardFull);
 
             Energy.TrySpend(nowUnix);
@@ -73,6 +86,42 @@ namespace MergeCafe.Generators
 
             StatesChanged?.Invoke();
             return new SpawnResult(SpawnResultCode.Ok, cellIndex, item);
+        }
+
+        /// <summary>Random free cell within SpawnRadius of the origin, else the globally nearest free cell.</summary>
+        private int PickSpawnCell(BoardManager board, int originCell)
+        {
+            int originRow = BoardManager.RowOf(originCell);
+            int originCol = BoardManager.ColOf(originCell);
+
+            var near = new List<int>();
+            int nearest = -1;
+            int nearestDist = int.MaxValue;
+
+            for (int i = 0; i < BoardManager.CellCount; i++)
+            {
+                if (!board.IsFreeCell(i))
+                    continue;
+
+                int dist = Math.Max(
+                    Math.Abs(BoardManager.RowOf(i) - originRow),
+                    Math.Abs(BoardManager.ColOf(i) - originCol));
+
+                if (dist <= SpawnRadius)
+                    near.Add(i);
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearest = i;
+                }
+            }
+
+            if (near.Count > 0)
+            {
+                int pick = Math.Min((int)(_rng01() * near.Count), near.Count - 1);
+                return near[pick];
+            }
+            return nearest;
         }
 
         public void RaiseStatesChanged() => StatesChanged?.Invoke();

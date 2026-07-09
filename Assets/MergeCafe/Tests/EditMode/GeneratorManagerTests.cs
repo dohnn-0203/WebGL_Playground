@@ -68,8 +68,12 @@ namespace MergeCafe.Tests
         public void SetUp()
         {
             _board = new BoardManager();
-            _generators = new GeneratorManager(T0);
+            _generators = new GeneratorManager(T0, () => 0f); // deterministic: picks first nearby cell
         }
+
+        private static int Chebyshev(int a, int b) => System.Math.Max(
+            System.Math.Abs(BoardManager.RowOf(a) - BoardManager.RowOf(b)),
+            System.Math.Abs(BoardManager.ColOf(a) - BoardManager.ColOf(b)));
 
         [Test]
         public void SharedEnergy_StartsFull()
@@ -90,15 +94,39 @@ namespace MergeCafe.Tests
         }
 
         [Test]
-        public void TrySpawn_PlacesLv1Item_AndSpendsSharedEnergy()
+        public void TrySpawn_PlacesLv1ItemNearOrigin_AndSpendsSharedEnergy()
         {
-            SpawnResult result = _generators.TrySpawn(ItemType.Coffee, _board, T0);
+            int origin = BoardManager.IndexOf(3, 4);
+            _board.TryPlaceGenerator(origin, ItemType.Coffee);
+
+            SpawnResult result = _generators.TrySpawn(ItemType.Coffee, _board, origin, T0);
 
             Assert.AreEqual(SpawnResultCode.Ok, result.Code);
             Assert.AreEqual(ItemType.Coffee, result.Item.Type);
             Assert.AreEqual(1, result.Item.Level);
             Assert.AreSame(result.Item, _board.GetItem(result.CellIndex));
             Assert.AreEqual(19, _generators.Energy.Current);
+            // Spawned within the neighbourhood of the generator.
+            Assert.LessOrEqual(Chebyshev(result.CellIndex, origin), GeneratorManager.SpawnRadius);
+        }
+
+        [Test]
+        public void TrySpawn_AllNearbyCellsAreWithinRadius_ForVariousRolls()
+        {
+            int origin = BoardManager.IndexOf(3, 4);
+            _board.TryPlaceGenerator(origin, ItemType.Coffee);
+
+            foreach (float roll in new[] { 0f, 0.25f, 0.5f, 0.99f })
+            {
+                var gen = new GeneratorManager(T0, () => roll);
+                var board = new BoardManager();
+                board.TryPlaceGenerator(origin, ItemType.Coffee);
+
+                SpawnResult r = gen.TrySpawn(ItemType.Coffee, board, origin, T0);
+                Assert.AreEqual(SpawnResultCode.Ok, r.Code);
+                Assert.LessOrEqual(Chebyshev(r.CellIndex, origin), GeneratorManager.SpawnRadius,
+                    $"roll {roll}");
+            }
         }
 
         [Test]
@@ -106,7 +134,7 @@ namespace MergeCafe.Tests
         {
             _generators.Energy.Current = 0;
 
-            SpawnResult result = _generators.TrySpawn(ItemType.Coffee, _board, T0);
+            SpawnResult result = _generators.TrySpawn(ItemType.Coffee, _board, BoardManager.IndexOf(3, 4), T0);
 
             Assert.AreEqual(SpawnResultCode.NoEnergy, result.Code);
             Assert.AreEqual(35, _board.FreeCellCount);
@@ -119,7 +147,7 @@ namespace MergeCafe.Tests
                 if (_board.IsFreeCell(i))
                     _board.TryPlaceItem(i, new ItemInstance(ItemType.Coffee, 5));
 
-            SpawnResult result = _generators.TrySpawn(ItemType.Coffee, _board, T0);
+            SpawnResult result = _generators.TrySpawn(ItemType.Coffee, _board, BoardManager.IndexOf(3, 4), T0);
 
             Assert.AreEqual(SpawnResultCode.BoardFull, result.Code);
             Assert.AreEqual(20, _generators.Energy.Current);

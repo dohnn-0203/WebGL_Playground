@@ -32,7 +32,7 @@ namespace MergeCafe.Core
         public GameManager(double nowUnix, Func<float> rng01 = null)
         {
             Board = new BoardManager();
-            Generators = new GeneratorManager(nowUnix);
+            Generators = new GeneratorManager(nowUnix, rng01);
             Economy = new EconomyManager();
             Orders = new OrderManager(rng01);
             Upgrades = new UpgradeManager();
@@ -46,10 +46,10 @@ namespace MergeCafe.Core
 
         public void Tick(double nowUnix) => Generators.Tick(nowUnix);
 
-        /// <summary>Player tapped a generator tile.</summary>
-        public bool RequestSpawn(ItemType type, double nowUnix)
+        /// <summary>Player tapped the generator tile at <paramref name="originCell"/>.</summary>
+        public bool RequestSpawn(ItemType type, int originCell, double nowUnix)
         {
-            SpawnResult result = Generators.TrySpawn(type, Board, nowUnix);
+            SpawnResult result = Generators.TrySpawn(type, Board, originCell, nowUnix);
             switch (result.Code)
             {
                 case SpawnResultCode.Ok:

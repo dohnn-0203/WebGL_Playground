@@ -44,9 +44,9 @@ namespace MergeCafe.Items
 
         public void OnCellClick(BoardCell cell, PointerEventData eventData)
         {
-            // Tap on a generator tile → produce (drags don't fire click).
+            // Tap on a generator tile → produce near it (drags don't fire click).
             if (_game.Board.HasGenerator(cell.Index))
-                _game.RequestSpawn(_game.Board.GetGenerator(cell.Index), TimeUtil.NowUnixSeconds());
+                _game.RequestSpawn(_game.Board.GetGenerator(cell.Index), cell.Index, TimeUtil.NowUnixSeconds());
         }
 
         public void OnCellBeginDrag(BoardCell cell, PointerEventData eventData)

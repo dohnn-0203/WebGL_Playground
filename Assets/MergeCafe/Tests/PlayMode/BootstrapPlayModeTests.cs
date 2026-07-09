@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using MergeCafe.Board;
 using MergeCafe.Core;
 using MergeCafe.Data;
@@ -73,21 +74,28 @@ namespace MergeCafe.Tests
             Assert.AreEqual(5, game.Orders.Orders.Count);
 
             // Generators are placed on the board.
-            Assert.IsTrue(game.Board.HasGenerator(GeneratorCatalog.CoffeeMachine.InitialCell));
+            int coffeeGenCell = GeneratorCatalog.CoffeeMachine.InitialCell;
+            Assert.IsTrue(game.Board.HasGenerator(coffeeGenCell));
             Assert.AreEqual(20, game.Generators.Energy.Current);
 
-            // --- Spawn two coffees (shared energy) and merge them ---
+            // --- Tap the coffee generator twice (items spawn near it) and merge them ---
             double now = TimeUtil.NowUnixSeconds();
-            Assert.IsTrue(game.RequestSpawn(ItemType.Coffee, now));
-            Assert.IsTrue(game.RequestSpawn(ItemType.Coffee, now));
+            Assert.IsTrue(game.RequestSpawn(ItemType.Coffee, coffeeGenCell, now));
+            Assert.IsTrue(game.RequestSpawn(ItemType.Coffee, coffeeGenCell, now));
             Assert.AreEqual(18, game.Generators.Energy.Current);
             yield return null;
 
-            // First free cells are (1,1) and (1,3) — (1,2) holds the coffee generator.
-            int first = BoardManager.IndexOf(1, 1);
-            int second = BoardManager.IndexOf(1, 3);
-            Assert.IsNotNull(game.Board.GetItem(first));
-            Assert.IsNotNull(game.Board.GetItem(second));
+            // Spawn cells are random near the generator — find the two Lv.1 coffees.
+            var coffeeCells = new List<int>();
+            for (int i = 0; i < BoardManager.CellCount; i++)
+            {
+                var it = game.Board.GetItem(i);
+                if (it != null && it.Type == ItemType.Coffee && it.Level == 1)
+                    coffeeCells.Add(i);
+            }
+            Assert.AreEqual(2, coffeeCells.Count, "two coffees spawned");
+            int first = coffeeCells[0];
+            int second = coffeeCells[1];
 
             var outcome = game.RequestMoveItem(first, second);
             Assert.AreEqual(MergeCafe.Items.MoveOutcome.Merged, outcome);
