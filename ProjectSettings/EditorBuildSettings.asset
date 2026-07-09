@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/MergeCafe/Scenes/MergeCafeGame.unity
+    path: Assets/Scenes/MergeCafeGame.unity
     guid: 4a4b8b8f3e492f241898772d83225162
   m_configObjects: {}

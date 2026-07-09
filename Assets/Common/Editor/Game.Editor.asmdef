@@ -1,0 +1,22 @@
+{
+    "name": "Game.Editor",
+    "rootNamespace": "MergeCafe.EditorTools",
+    "references": [
+        "Common.Runtime",
+        "MergeCafe.Runtime",
+        "Suika.Runtime",
+        "App.Runtime",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

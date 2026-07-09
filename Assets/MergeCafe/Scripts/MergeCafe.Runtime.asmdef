@@ -2,6 +2,7 @@
     "name": "MergeCafe.Runtime",
     "rootNamespace": "MergeCafe",
     "references": [
+        "Common.Runtime",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],

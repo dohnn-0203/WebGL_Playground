@@ -1,0 +1,17 @@
+{
+    "name": "Suika.Runtime",
+    "rootNamespace": "MergeCafe.Suika",
+    "references": [
+        "Common.Runtime",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
