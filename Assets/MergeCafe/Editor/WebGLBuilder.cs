@@ -29,8 +29,13 @@ namespace MergeCafe.EditorTools
             PlayerSettings.companyName = "MergeCafe";
             PlayerSettings.productName = "Merge Cafe Puzzle";
             PlayerSettings.runInBackground = false;
-            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
-            PlayerSettings.WebGL.decompressionFallback = true;
+            // GitHub Pages cannot set Content-Encoding headers and mishandles the
+            // pre-compressed .unityweb + decompression-fallback path (works on a plain
+            // local server but corrupts the payload on Pages → runtime crash). Ship
+            // UNCOMPRESSED so Pages serves the files directly and applies its own
+            // transparent gzip. (webGL_game.md §20)
+            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
+            PlayerSettings.WebGL.decompressionFallback = false;
             PlayerSettings.WebGL.dataCaching = true;
             PlayerSettings.WebGL.exceptionSupport = diagnostic
                 ? WebGLExceptionSupport.FullWithStacktrace
