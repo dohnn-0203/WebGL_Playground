@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MergeCafe.Board;
 using MergeCafe.Core;
 using MergeCafe.Data;
+using MergeCafe.Orders;
 using MergeCafe.Save;
 using NUnit.Framework;
 using UnityEngine;
@@ -112,6 +113,55 @@ namespace MergeCafe.Tests
             Assert.IsTrue(SaveManager.TryLoadInto(restored, now));
             Assert.AreEqual(2, restored.Board.GetItem(second).Level);
             Assert.AreEqual(18, restored.Generators.Energy.Current);
+        }
+
+        [UnityTest]
+        public IEnumerator Stress_ExercisesEveryUiPath_WithoutRecursion()
+        {
+            _bootstrapGo = new GameObject("TestBootstrap");
+            var bootstrap = _bootstrapGo.AddComponent<GameBootstrap>();
+            yield return null;
+            bootstrap.StartGame();
+            yield return null;
+
+            GameManager game = bootstrap.Game;
+
+            // Open the merge guide (builds all 15 item icons + generator icons).
+            var popupLayer = (RectTransform)GameObject.Find("PopupLayer").transform;
+            MergeCafe.UI.MergeGuideView.Show(popupLayer);
+            yield return null;
+
+            // Economy actions.
+            game.Economy.AddGold(50000);
+            Assert.IsTrue(game.RequestUpgradeEnergy());
+            Assert.IsTrue(game.RequestExpandBoard());
+            yield return null;
+
+            // Many spawns near the generator.
+            double now = TimeUtil.NowUnixSeconds();
+            int genCell = GeneratorCatalog.CoffeeMachine.InitialCell;
+            for (int i = 0; i < 8; i++)
+                game.RequestSpawn(ItemType.Coffee, genCell, now);
+            yield return null;
+
+            // Move a generator.
+            game.Board.TryFindEmptyCell(out int genTarget);
+            game.RequestMoveGenerator(genCell, genTarget);
+            yield return null;
+
+            // Complete an order.
+            CafeOrder order = game.Orders.Orders[0];
+            Assert.IsTrue(game.Board.TryFindEmptyCell(out int freeCell));
+            game.Board.TryPlaceItem(freeCell,
+                new ItemInstance(order.requiredItemType, order.requiredItemLevel));
+            Assert.IsTrue(game.RequestCompleteOrder(order.orderId));
+            yield return null;
+
+            // Run several frames (Update/Tick + gauge countdown).
+            for (int f = 0; f < 8; f++)
+                yield return null;
+
+            Assert.IsNotNull(game.Board); // reached here → no stack overflow along these paths
         }
 
         [UnityTest]

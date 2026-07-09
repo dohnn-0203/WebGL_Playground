@@ -7,9 +7,9 @@ using UnityEngine.UI;
 namespace MergeCafe.Items
 {
     /// <summary>
-    /// Visual token for one board item: colored circle + short label (C1/B2/D3)
-    /// + Korean name (webGL_game.md §10). Created/refreshed by BoardGridView so the
-    /// view always mirrors BoardManager state. Dragging is added in v0.0.4.
+    /// Visual token for one board item: a soft family-tinted disc, the procedurally
+    /// drawn food icon (<see cref="FoodIcons"/>), and a small level badge. Created and
+    /// refreshed by BoardGridView so the view always mirrors BoardManager state.
     /// </summary>
     public sealed class ItemTokenView : MonoBehaviour
     {
@@ -17,11 +17,10 @@ namespace MergeCafe.Items
 
         public ItemInstance Item { get; private set; }
 
-        private Image _circle;
-        private Text _label;
-        private Text _nameText;
+        private Image _disc;
+        private Image _icon;
+        private Text _levelText;
 
-        /// <summary>Ensures the cell shows exactly the given item.</summary>
         public static ItemTokenView CreateOrUpdate(BoardCell cell, ItemInstance item)
         {
             Transform existing = cell.transform.Find(TokenName);
@@ -29,7 +28,6 @@ namespace MergeCafe.Items
             if (view == null)
                 view = Create(cell);
 
-            // A drag may have hidden the token; refresh always restores visibility.
             if (!view.gameObject.activeSelf)
                 view.gameObject.SetActive(true);
 
@@ -42,9 +40,6 @@ namespace MergeCafe.Items
             Transform existing = cell.transform.Find(TokenName);
             if (existing != null)
             {
-                // Destroy() is deferred to end of frame; rename + detach immediately so a
-                // same-frame CreateOrUpdate (e.g. merge: remove → place) never finds and
-                // rebinds a token that is about to be destroyed.
                 existing.name = TokenName + "_Removed";
                 existing.SetParent(null, false);
                 Destroy(existing.gameObject);
@@ -55,37 +50,41 @@ namespace MergeCafe.Items
         {
             RectTransform root = UIFactory.CreateUiObject(cell.transform, TokenName);
             UIFactory.Stretch(root);
-            root.offsetMin = new Vector2(8f, 8f);
-            root.offsetMax = new Vector2(-8f, -8f);
+            root.offsetMin = new Vector2(6f, 6f);
+            root.offsetMax = new Vector2(-6f, -6f);
 
             var view = root.gameObject.AddComponent<ItemTokenView>();
 
-            view._circle = UIFactory.CreateImage(root, "Circle", Color.white);
-            view._circle.sprite = SpriteFactory.Circle;
-            view._circle.raycastTarget = false;
-            UIFactory.Stretch((RectTransform)view._circle.transform);
+            view._disc = UIFactory.CreateImage(root, "Disc", Color.white);
+            view._disc.sprite = SpriteFactory.Circle;
+            view._disc.raycastTarget = false;
+            UIFactory.Stretch((RectTransform)view._disc.transform);
 
-            view._label = UIFactory.CreateText(view._circle.transform, "ShortLabel", "", 44,
-                UITheme.TextMain, TextAnchor.MiddleCenter, FontStyle.Bold);
-            var labelRect = (RectTransform)view._label.transform;
-            UIFactory.Stretch(labelRect);
-            labelRect.offsetMin = new Vector2(0f, 14f);
-            view._label.resizeTextForBestFit = true;
-            view._label.resizeTextMinSize = 16;
-            view._label.resizeTextMaxSize = 46;
-            view._label.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1.5f, -1.5f);
+            view._icon = UIFactory.CreateImage(root, "Icon", Color.white);
+            view._icon.raycastTarget = false;
+            view._icon.preserveAspect = true;
+            UIFactory.Stretch((RectTransform)view._icon.transform);
+            var iconRect = (RectTransform)view._icon.transform;
+            iconRect.offsetMin = new Vector2(6f, 6f);
+            iconRect.offsetMax = new Vector2(-6f, -6f);
 
-            view._nameText = UIFactory.CreateText(view._circle.transform, "NameLabel", "", 16,
-                UITheme.TextMain, TextAnchor.MiddleCenter);
-            var nameRect = (RectTransform)view._nameText.transform;
-            nameRect.anchorMin = new Vector2(0f, 0.12f);
-            nameRect.anchorMax = new Vector2(1f, 0.36f);
-            nameRect.offsetMin = Vector2.zero;
-            nameRect.offsetMax = Vector2.zero;
-            view._nameText.resizeTextForBestFit = true;
-            view._nameText.resizeTextMinSize = 10;
-            view._nameText.resizeTextMaxSize = 18;
-            view._nameText.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
+            // Level badge in the bottom-right corner.
+            Image badge = UIFactory.CreateImage(root, "Badge", new Color(0.12f, 0.09f, 0.07f, 0.92f));
+            badge.sprite = SpriteFactory.Circle;
+            badge.raycastTarget = false;
+            var badgeRect = (RectTransform)badge.transform;
+            badgeRect.anchorMin = new Vector2(1f, 0f);
+            badgeRect.anchorMax = new Vector2(1f, 0f);
+            badgeRect.pivot = new Vector2(1f, 0f);
+            badgeRect.anchoredPosition = new Vector2(2f, -2f);
+            badgeRect.sizeDelta = new Vector2(34f, 34f);
+
+            view._levelText = UIFactory.CreateText(badge.transform, "Lv", "", 22, UITheme.TextMain,
+                TextAnchor.MiddleCenter, FontStyle.Bold);
+            UIFactory.Stretch((RectTransform)view._levelText.transform);
+            view._levelText.resizeTextForBestFit = true;
+            view._levelText.resizeTextMinSize = 10;
+            view._levelText.resizeTextMaxSize = 24;
 
             return view;
         }
@@ -94,11 +93,9 @@ namespace MergeCafe.Items
         {
             Item = item;
             ItemDefinition def = item.Definition;
-            _circle.color = def.Color;
-            _label.text = def.ShortLabel;
-            _label.color = UITheme.LabelOn(def.Color);
-            _nameText.text = def.DisplayName;
-            _nameText.color = UITheme.LabelOn(def.Color);
+            _disc.color = new Color(def.Color.r, def.Color.g, def.Color.b, 0.28f);
+            _icon.sprite = FoodIcons.Item(item.Type, item.Level);
+            _levelText.text = item.Level.ToString();
         }
     }
 }

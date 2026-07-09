@@ -26,6 +26,7 @@ namespace MergeCafe.Orders
 
         private Image _portrait;
         private Image _tokenCircle;
+        private Image _tokenIcon;
         private Text _tokenLabel;
         private Text _nameText;
         private Text _rewardText;
@@ -70,7 +71,7 @@ namespace MergeCafe.Orders
             headRect.sizeDelta = new Vector2(26f, 26f);
             headRect.anchoredPosition = new Vector2(0f, 2f);
 
-            // Required item token.
+            // Required item token: tinted disc + food icon.
             view._tokenCircle = UIFactory.CreateImage(rect, "Token", Color.white);
             view._tokenCircle.sprite = SpriteFactory.Circle;
             view._tokenCircle.raycastTarget = false;
@@ -81,9 +82,17 @@ namespace MergeCafe.Orders
             tokenRect.anchoredPosition = new Vector2(80f, 18f);
             tokenRect.sizeDelta = new Vector2(52f, 52f);
 
-            view._tokenLabel = UIFactory.CreateText(tokenRect, "Label", "", 24, UITheme.TextMain,
-                TextAnchor.MiddleCenter, FontStyle.Bold);
+            view._tokenIcon = UIFactory.CreateImage(tokenRect, "Icon", Color.white);
+            view._tokenIcon.raycastTarget = false;
+            view._tokenIcon.preserveAspect = true;
+            UIFactory.Stretch((RectTransform)view._tokenIcon.transform);
+            ((RectTransform)view._tokenIcon.transform).offsetMin = new Vector2(4f, 4f);
+            ((RectTransform)view._tokenIcon.transform).offsetMax = new Vector2(-4f, -4f);
+
+            view._tokenLabel = UIFactory.CreateText(tokenRect, "Lv", "", 18, UITheme.TextMain,
+                TextAnchor.LowerRight, FontStyle.Bold);
             UIFactory.Stretch((RectTransform)view._tokenLabel.transform);
+            view._tokenLabel.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
 
             view._nameText = UIFactory.CreateText(rect, "Name", "", 22, UITheme.TextMain,
                 TextAnchor.MiddleLeft, FontStyle.Bold);
@@ -131,9 +140,9 @@ namespace MergeCafe.Orders
                 return;
 
             ItemDefinition def = ItemCatalog.Get(order.requiredItemType, order.requiredItemLevel);
-            _tokenCircle.color = def.Color;
-            _tokenLabel.text = def.ShortLabel;
-            _tokenLabel.color = UITheme.LabelOn(def.Color);
+            _tokenCircle.color = new Color(def.Color.r, def.Color.g, def.Color.b, 0.28f);
+            _tokenIcon.sprite = FoodIcons.Item(order.requiredItemType, order.requiredItemLevel);
+            _tokenLabel.text = order.requiredItemLevel.ToString();
             _nameText.text = def.DisplayName;
             _rewardText.text = $"+{order.rewardGold} 골드";
             RefreshButton();

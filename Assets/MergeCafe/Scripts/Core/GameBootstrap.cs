@@ -7,6 +7,7 @@ using MergeCafe.Save;
 using MergeCafe.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace MergeCafe.Core
 {
@@ -82,11 +83,32 @@ namespace MergeCafe.Core
 
             UpgradePanelView.Build(_ui.BottomBar, _game);
 
+            BuildHelpButton();
+
             // Restore progress (if any), then autosave after every successful action (§14).
             SaveManager.TryLoadInto(_game, TimeUtil.NowUnixSeconds());
             _game.StateChanged += () => SaveManager.Save(_game);
 
             _hud.SettingsButton.onClick.AddListener(ShowResetPopup);
+        }
+
+        private void BuildHelpButton()
+        {
+            // "!" button at the top-left of the play area → merge recipe guide.
+            Button help = UIFactory.CreateButton(_ui.BoardPanel, "HelpButton", "!", 34,
+                UITheme.ButtonPrimary, out _);
+            Image image = help.GetComponent<Image>();
+            image.sprite = SpriteFactory.Circle;
+            image.type = Image.Type.Simple;
+
+            var rect = (RectTransform)help.transform;
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(14f, -14f);
+            rect.sizeDelta = new Vector2(58f, 58f);
+
+            help.onClick.AddListener(() => MergeGuideView.Show(_ui.PopupLayer));
         }
 
         private void ShowResetPopup()

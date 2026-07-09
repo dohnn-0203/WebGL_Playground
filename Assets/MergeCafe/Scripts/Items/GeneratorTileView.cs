@@ -7,9 +7,9 @@ using UnityEngine.UI;
 namespace MergeCafe.Items
 {
     /// <summary>
-    /// Visual for a generator sitting on a board cell. Rendered as a rounded machine
-    /// tile (distinct from the round item tokens) tinted by its output family, with a
-    /// small "tap to make" lightning badge. Created/updated by BoardGridView.
+    /// Visual for a generator sitting on a board cell: a rounded machine plate, the
+    /// procedurally drawn appliance icon (<see cref="FoodIcons"/>), a name caption and
+    /// a gold "tap to make" badge. Created/updated by BoardGridView.
     /// </summary>
     public sealed class GeneratorTileView : MonoBehaviour
     {
@@ -17,8 +17,9 @@ namespace MergeCafe.Items
 
         public ItemType Output { get; private set; }
 
-        private Image _tile;
-        private Text _label;
+        private Image _plate;
+        private Image _icon;
+        private Text _name;
 
         public static GeneratorTileView CreateOrUpdate(BoardCell cell, ItemType output)
         {
@@ -49,45 +50,48 @@ namespace MergeCafe.Items
         {
             RectTransform root = UIFactory.CreateUiObject(cell.transform, TileName);
             UIFactory.Stretch(root);
-            root.offsetMin = new Vector2(3f, 3f);
-            root.offsetMax = new Vector2(-3f, -3f);
+            root.offsetMin = new Vector2(2f, 2f);
+            root.offsetMax = new Vector2(-2f, -2f);
 
             var view = root.gameObject.AddComponent<GeneratorTileView>();
 
-            view._tile = UIFactory.CreateImage(root, "Machine", Color.white);
-            view._tile.sprite = SpriteFactory.RoundedRect;
-            view._tile.type = Image.Type.Sliced;
-            view._tile.raycastTarget = false;
-            UIFactory.Stretch((RectTransform)view._tile.transform);
+            view._plate = UIFactory.CreateImage(root, "Plate", new Color(0.16f, 0.13f, 0.10f, 0.55f));
+            view._plate.sprite = SpriteFactory.RoundedRect;
+            view._plate.type = Image.Type.Sliced;
+            view._plate.raycastTarget = false;
+            UIFactory.Stretch((RectTransform)view._plate.transform);
 
-            // Dark inner panel so the machine reads differently from item tokens.
-            Image inner = UIFactory.CreateImage(view._tile.transform, "Inner", new Color(0f, 0f, 0f, 0.28f));
-            inner.sprite = SpriteFactory.RoundedRect;
-            inner.type = Image.Type.Sliced;
-            inner.raycastTarget = false;
-            var innerRect = (RectTransform)inner.transform;
-            UIFactory.Stretch(innerRect);
-            innerRect.offsetMin = new Vector2(6f, 6f);
-            innerRect.offsetMax = new Vector2(-6f, -6f);
+            view._icon = UIFactory.CreateImage(view._plate.transform, "Icon", Color.white);
+            view._icon.raycastTarget = false;
+            view._icon.preserveAspect = true;
+            var iconRect = (RectTransform)view._icon.transform;
+            iconRect.anchorMin = new Vector2(0f, 0.22f);
+            iconRect.anchorMax = new Vector2(1f, 1f);
+            iconRect.offsetMin = new Vector2(6f, 0f);
+            iconRect.offsetMax = new Vector2(-6f, -4f);
 
-            view._label = UIFactory.CreateText(view._tile.transform, "Label", "", 22,
-                UITheme.TextMain, TextAnchor.MiddleCenter, FontStyle.Bold);
-            UIFactory.Stretch((RectTransform)view._label.transform);
-            view._label.resizeTextForBestFit = true;
-            view._label.resizeTextMinSize = 10;
-            view._label.resizeTextMaxSize = 26;
-            view._label.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1.5f, -1.5f);
+            view._name = UIFactory.CreateText(view._plate.transform, "Name", "", 18, UITheme.TextMain,
+                TextAnchor.MiddleCenter, FontStyle.Bold);
+            var nameRect = (RectTransform)view._name.transform;
+            nameRect.anchorMin = new Vector2(0f, 0f);
+            nameRect.anchorMax = new Vector2(1f, 0.24f);
+            nameRect.offsetMin = new Vector2(2f, 2f);
+            nameRect.offsetMax = new Vector2(-2f, 0f);
+            view._name.resizeTextForBestFit = true;
+            view._name.resizeTextMinSize = 8;
+            view._name.resizeTextMaxSize = 20;
+            view._name.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
 
-            // Gold accent corner marking this as a tappable producer.
-            Image badge = UIFactory.CreateImage(view._tile.transform, "Badge", UITheme.TextGold);
+            // Gold "tap to produce" badge.
+            Image badge = UIFactory.CreateImage(view._plate.transform, "Badge", UITheme.TextGold);
             badge.sprite = SpriteFactory.Circle;
             badge.raycastTarget = false;
             var badgeRect = (RectTransform)badge.transform;
             badgeRect.anchorMin = new Vector2(1f, 1f);
             badgeRect.anchorMax = new Vector2(1f, 1f);
             badgeRect.pivot = new Vector2(1f, 1f);
-            badgeRect.anchoredPosition = new Vector2(-4f, -4f);
-            badgeRect.sizeDelta = new Vector2(14f, 14f);
+            badgeRect.anchoredPosition = new Vector2(-3f, -3f);
+            badgeRect.sizeDelta = new Vector2(16f, 16f);
 
             return view;
         }
@@ -95,10 +99,8 @@ namespace MergeCafe.Items
         public void Bind(ItemType output)
         {
             Output = output;
-            Color color = ItemCatalog.Get(output, 1).Color;
-            _tile.color = new Color(color.r * 0.7f + 0.15f, color.g * 0.7f + 0.15f, color.b * 0.7f + 0.15f, 1f);
-            _label.text = GeneratorCatalog.For(output).DisplayName;
-            _label.color = UITheme.LabelOn(_tile.color);
+            _icon.sprite = FoodIcons.Generator(output);
+            _name.text = GeneratorCatalog.For(output).DisplayName;
         }
     }
 }

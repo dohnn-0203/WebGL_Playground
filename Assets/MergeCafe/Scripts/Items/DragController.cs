@@ -198,39 +198,36 @@ namespace MergeCafe.Items
 
             if (_draggingGenerator)
             {
-                Color color = ItemCatalog.Get(_draggedGenerator, 1).Color;
-                Image tile = UIFactory.CreateImage(ghost, "Machine",
-                    new Color(color.r * 0.7f + 0.15f, color.g * 0.7f + 0.15f, color.b * 0.7f + 0.15f, 1f));
-                tile.sprite = SpriteFactory.RoundedRect;
-                tile.type = Image.Type.Sliced;
-                tile.raycastTarget = false;
-                UIFactory.Stretch((RectTransform)tile.transform);
+                Image plate = UIFactory.CreateImage(ghost, "Plate", new Color(0.16f, 0.13f, 0.10f, 0.65f));
+                plate.sprite = SpriteFactory.RoundedRect;
+                plate.type = Image.Type.Sliced;
+                plate.raycastTarget = false;
+                UIFactory.Stretch((RectTransform)plate.transform);
 
-                Text label = UIFactory.CreateText(tile.transform, "Label",
-                    GeneratorCatalog.For(_draggedGenerator).DisplayName, 22,
-                    UITheme.LabelOn(tile.color), TextAnchor.MiddleCenter, FontStyle.Bold);
-                UIFactory.Stretch((RectTransform)label.transform);
-                label.resizeTextForBestFit = true;
-                label.resizeTextMinSize = 10;
-                label.resizeTextMaxSize = 26;
+                Image icon = UIFactory.CreateImage(plate.transform, "Icon", Color.white);
+                icon.sprite = FoodIcons.Generator(_draggedGenerator);
+                icon.preserveAspect = true;
+                icon.raycastTarget = false;
+                UIFactory.Stretch((RectTransform)icon.transform);
+                ((RectTransform)icon.transform).offsetMin = new Vector2(6f, 6f);
+                ((RectTransform)icon.transform).offsetMax = new Vector2(-6f, -6f);
             }
             else
             {
                 ItemDefinition def = _draggedItem.Definition;
-                Image circle = UIFactory.CreateImage(ghost, "Circle", def.Color);
-                circle.sprite = SpriteFactory.Circle;
-                circle.raycastTarget = false;
-                var circleRect = (RectTransform)circle.transform;
-                UIFactory.Stretch(circleRect);
-                circleRect.offsetMin = new Vector2(8f, 8f);
-                circleRect.offsetMax = new Vector2(-8f, -8f);
+                Image disc = UIFactory.CreateImage(ghost, "Disc",
+                    new Color(def.Color.r, def.Color.g, def.Color.b, 0.28f));
+                disc.sprite = SpriteFactory.Circle;
+                disc.raycastTarget = false;
+                UIFactory.Stretch((RectTransform)disc.transform);
 
-                Text label = UIFactory.CreateText(circle.transform, "Label", def.ShortLabel, 44,
-                    UITheme.LabelOn(def.Color), TextAnchor.MiddleCenter, FontStyle.Bold);
-                UIFactory.Stretch((RectTransform)label.transform);
-                label.resizeTextForBestFit = true;
-                label.resizeTextMinSize = 16;
-                label.resizeTextMaxSize = 46;
+                Image icon = UIFactory.CreateImage(disc.transform, "Icon", Color.white);
+                icon.sprite = FoodIcons.Item(_draggedItem.Type, _draggedItem.Level);
+                icon.preserveAspect = true;
+                icon.raycastTarget = false;
+                UIFactory.Stretch((RectTransform)icon.transform);
+                ((RectTransform)icon.transform).offsetMin = new Vector2(8f, 8f);
+                ((RectTransform)icon.transform).offsetMax = new Vector2(-8f, -8f);
             }
 
             _ghost = ghost;
