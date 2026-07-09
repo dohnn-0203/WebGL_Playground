@@ -1,4 +1,6 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.TextCore.LowLevel;
 
 namespace MergeCafe.UI
 {
@@ -79,6 +81,29 @@ namespace MergeCafe.UI
                         _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 }
                 return _font;
+            }
+        }
+
+        private static TMP_FontAsset _tmpFont;
+
+        /// <summary>
+        /// Crisp SDF font for all UI text (TextMeshPro). Built at runtime from the same
+        /// Noto Sans KR face as a DYNAMIC atlas, so Korean glyphs are rasterized on demand
+        /// and the repository stays free of a huge pre-baked atlas.
+        /// </summary>
+        public static TMP_FontAsset TmpFont
+        {
+            get
+            {
+                if (_tmpFont == null)
+                {
+                    Font source = Font; // Noto Sans KR (or built-in fallback)
+                    _tmpFont = TMP_FontAsset.CreateFontAsset(
+                        source, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
+                        AtlasPopulationMode.Dynamic, enableMultiAtlasSupport: true);
+                    _tmpFont.name = "NotoSansKR SDF";
+                }
+                return _tmpFont;
             }
         }
 

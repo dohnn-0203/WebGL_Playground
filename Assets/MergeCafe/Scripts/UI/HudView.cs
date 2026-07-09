@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,7 +7,7 @@ namespace MergeCafe.UI
     /// <summary>Top HUD: title, gold, and the settings (reset) button.</summary>
     public sealed class HudView : MonoBehaviour
     {
-        private Text _goldText;
+        private TextMeshProUGUI _goldText;
         private Button _settingsButton;
 
         public Button SettingsButton => _settingsButton;
@@ -15,7 +16,7 @@ namespace MergeCafe.UI
         {
             var view = topHud.gameObject.AddComponent<HudView>();
 
-            Text title = UIFactory.CreateText(topHud, "GameTitle", "머지 카페", 32, UITheme.TextMain,
+            var title = UIFactory.CreateText(topHud, "GameTitle", "머지 카페", 32, UITheme.TextMain,
                 TextAnchor.MiddleLeft, FontStyle.Bold);
             var titleRect = (RectTransform)title.transform;
             titleRect.anchorMin = new Vector2(0f, 0f);

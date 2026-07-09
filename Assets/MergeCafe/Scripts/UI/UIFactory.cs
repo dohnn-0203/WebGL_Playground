@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -119,25 +120,56 @@ namespace MergeCafe.UI
             return image;
         }
 
-        public static Text CreateText(Transform parent, string name, string content, int fontSize,
+        /// <summary>
+        /// Creates a TextMeshPro (SDF) label. Keeps the legacy TextAnchor/FontStyle
+        /// parameters so call sites are unchanged; they are mapped to TMP equivalents.
+        /// </summary>
+        public static TextMeshProUGUI CreateText(Transform parent, string name, string content, int fontSize,
             Color color, TextAnchor alignment = TextAnchor.MiddleCenter, FontStyle style = FontStyle.Normal)
         {
             RectTransform rect = CreateUiObject(parent, name);
-            var text = rect.gameObject.AddComponent<Text>();
-            text.font = UITheme.Font;
+            var text = rect.gameObject.AddComponent<TextMeshProUGUI>();
+            text.font = UITheme.TmpFont;
             text.text = content;
             text.fontSize = fontSize;
             text.color = color;
-            text.alignment = alignment;
-            text.fontStyle = style;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.alignment = MapAlignment(alignment);
+            text.fontStyle = MapStyle(style);
+            text.enableWordWrapping = false;
+            text.overflowMode = TextOverflowModes.Overflow;
             text.raycastTarget = false;
             return text;
         }
 
+        public static TextAlignmentOptions MapAlignment(TextAnchor a)
+        {
+            switch (a)
+            {
+                case TextAnchor.UpperLeft: return TextAlignmentOptions.TopLeft;
+                case TextAnchor.UpperCenter: return TextAlignmentOptions.Top;
+                case TextAnchor.UpperRight: return TextAlignmentOptions.TopRight;
+                case TextAnchor.MiddleLeft: return TextAlignmentOptions.Left;
+                case TextAnchor.MiddleRight: return TextAlignmentOptions.Right;
+                case TextAnchor.LowerLeft: return TextAlignmentOptions.BottomLeft;
+                case TextAnchor.LowerCenter: return TextAlignmentOptions.Bottom;
+                case TextAnchor.LowerRight: return TextAlignmentOptions.BottomRight;
+                default: return TextAlignmentOptions.Center;
+            }
+        }
+
+        public static FontStyles MapStyle(FontStyle s)
+        {
+            switch (s)
+            {
+                case FontStyle.Bold: return FontStyles.Bold;
+                case FontStyle.Italic: return FontStyles.Italic;
+                case FontStyle.BoldAndItalic: return FontStyles.Bold | FontStyles.Italic;
+                default: return FontStyles.Normal;
+            }
+        }
+
         public static Button CreateButton(RectTransform parent, string name, string label,
-            int fontSize, Color background, out Text labelText)
+            int fontSize, Color background, out TextMeshProUGUI labelText)
         {
             Image image = CreateImage(parent, name, background);
             image.raycastTarget = true;
@@ -167,9 +199,9 @@ namespace MergeCafe.UI
         }
 
         /// <summary>Small dim header text used as a panel title.</summary>
-        public static Text CreatePanelTitle(RectTransform panel, string title)
+        public static TextMeshProUGUI CreatePanelTitle(RectTransform panel, string title)
         {
-            Text text = CreateText(panel, "Title", title, 26, UITheme.TextDim, TextAnchor.MiddleCenter, FontStyle.Bold);
+            TextMeshProUGUI text = CreateText(panel, "Title", title, 26, UITheme.TextDim, TextAnchor.MiddleCenter, FontStyle.Bold);
             var rect = (RectTransform)text.transform;
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(1f, 1f);

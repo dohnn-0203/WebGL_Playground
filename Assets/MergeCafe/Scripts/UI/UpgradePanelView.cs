@@ -1,5 +1,6 @@
 using MergeCafe.Core;
 using MergeCafe.Economy;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,9 +15,9 @@ namespace MergeCafe.UI
         private GameManager _game;
 
         private Button _expandButton;
-        private Text _expandLabel;
+        private TextMeshProUGUI _expandLabel;
         private Button _energyButton;
-        private Text _energyLabel;
+        private TextMeshProUGUI _energyLabel;
 
         public static UpgradePanelView Build(RectTransform bottomBar, GameManager game)
         {

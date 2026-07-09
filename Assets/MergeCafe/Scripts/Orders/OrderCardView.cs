@@ -1,6 +1,7 @@
 using MergeCafe.Core;
 using MergeCafe.Data;
 using MergeCafe.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -27,9 +28,9 @@ namespace MergeCafe.Orders
         private Image _portrait;
         private Image _tokenCircle;
         private Image _tokenIcon;
-        private Text _tokenLabel;
-        private Text _nameText;
-        private Text _rewardText;
+        private TextMeshProUGUI _tokenLabel;
+        private TextMeshProUGUI _nameText;
+        private TextMeshProUGUI _rewardText;
         private Button _completeButton;
 
         public static OrderCardView Build(RectTransform leftPanel, GameManager game, int slot)
@@ -92,7 +93,6 @@ namespace MergeCafe.Orders
             view._tokenLabel = UIFactory.CreateText(tokenRect, "Lv", "", 18, UITheme.TextMain,
                 TextAnchor.LowerRight, FontStyle.Bold);
             UIFactory.Stretch((RectTransform)view._tokenLabel.transform);
-            view._tokenLabel.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
 
             view._nameText = UIFactory.CreateText(rect, "Name", "", 22, UITheme.TextMain,
                 TextAnchor.MiddleLeft, FontStyle.Bold);

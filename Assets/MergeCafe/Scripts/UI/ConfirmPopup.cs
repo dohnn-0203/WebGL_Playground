@@ -27,14 +27,14 @@ namespace MergeCafe.UI
             panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             panelRect.sizeDelta = new Vector2(560f, 300f);
 
-            Text titleText = UIFactory.CreateText(panelRect, "Title", title, 30, UITheme.TextMain,
+            var titleText = UIFactory.CreateText(panelRect, "Title", title, 30, UITheme.TextMain,
                 TextAnchor.MiddleCenter, FontStyle.Bold);
             var titleRect = (RectTransform)titleText.transform;
             titleRect.anchorMin = new Vector2(0f, 0.72f);
             titleRect.anchorMax = new Vector2(1f, 1f);
             titleRect.offsetMin = titleRect.offsetMax = Vector2.zero;
 
-            Text messageText = UIFactory.CreateText(panelRect, "Message", message, 24, UITheme.TextDim);
+            var messageText = UIFactory.CreateText(panelRect, "Message", message, 24, UITheme.TextDim);
             var messageRect = (RectTransform)messageText.transform;
             messageRect.anchorMin = new Vector2(0f, 0.34f);
             messageRect.anchorMax = new Vector2(1f, 0.72f);

@@ -1,6 +1,7 @@
 using MergeCafe.Board;
 using MergeCafe.Data;
 using MergeCafe.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,7 +20,7 @@ namespace MergeCafe.Items
 
         private Image _plate;
         private Image _icon;
-        private Text _name;
+        private TextMeshProUGUI _name;
 
         public static GeneratorTileView CreateOrUpdate(BoardCell cell, ItemType output)
         {
@@ -77,7 +78,6 @@ namespace MergeCafe.Items
             nameRect.anchorMax = new Vector2(1f, 0.24f);
             nameRect.offsetMin = new Vector2(2f, 2f);
             nameRect.offsetMax = new Vector2(-2f, 0f);
-            view._name.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
 
             // Gold "tap to produce" badge.
             Image badge = UIFactory.CreateImage(view._plate.transform, "Badge", UITheme.TextGold);

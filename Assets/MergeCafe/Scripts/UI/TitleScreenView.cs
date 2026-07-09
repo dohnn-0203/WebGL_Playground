@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,7 +15,7 @@ namespace MergeCafe.UI
     {
         private Action _onStartMerge;
         private bool _started;
-        private Text _notice;
+        private TextMeshProUGUI _notice;
         private Coroutine _noticeRoutine;
 
         private static readonly Color Backdrop = Hex("241A14");
@@ -62,12 +63,11 @@ namespace MergeCafe.UI
 
             ScatterBeans(content);
 
-            Text title = UIFactory.CreateText(content, "Title", "미니게임 천국", 92,
+            var title = UIFactory.CreateText(content, "Title", "미니게임 천국", 92,
                 UITheme.TextGold, TextAnchor.MiddleCenter, FontStyle.Bold);
-            title.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(3f, -3f);
             Center((RectTransform)title.transform, 340f, 130f, 1400f);
 
-            Text subtitle = UIFactory.CreateText(content, "Subtitle", "플레이할 게임을 선택하세요", 34,
+            var subtitle = UIFactory.CreateText(content, "Subtitle", "플레이할 게임을 선택하세요", 34,
                 UITheme.TextDim, TextAnchor.MiddleCenter);
             Center((RectTransform)subtitle.transform, 250f, 60f, 1200f);
 
@@ -86,7 +86,7 @@ namespace MergeCafe.UI
             view._notice = UIFactory.CreateText(content, "Notice", "", 32, UITheme.TextMain,
                 TextAnchor.MiddleCenter);
             Center((RectTransform)view._notice.transform, -320f, 60f, 1200f);
-            view._notice.canvasRenderer.SetAlpha(0f);
+            view._notice.alpha = 0f;
 
             return view;
         }
@@ -138,12 +138,12 @@ namespace MergeCafe.UI
             }
             else
             {
-                Text q = UIFactory.CreateText(discRect, "Q", "?", 96, UITheme.TextDim,
+                var q = UIFactory.CreateText(discRect, "Q", "?", 96, UITheme.TextDim,
                     TextAnchor.MiddleCenter, FontStyle.Bold);
                 UIFactory.Stretch((RectTransform)q.transform);
             }
 
-            Text nameText = UIFactory.CreateText(rect, "Name", name, 38,
+            var nameText = UIFactory.CreateText(rect, "Name", name, 38,
                 playable ? UITheme.TextMain : UITheme.TextDim, TextAnchor.MiddleCenter, FontStyle.Bold);
             var nameRect = (RectTransform)nameText.transform;
             nameRect.anchorMin = new Vector2(0f, 0f);
@@ -152,7 +152,7 @@ namespace MergeCafe.UI
             nameRect.offsetMax = new Vector2(-8f, 160f);
             nameText.raycastTarget = false;
 
-            Text statusText = UIFactory.CreateText(rect, "Status", status, 26,
+            var statusText = UIFactory.CreateText(rect, "Status", status, 26,
                 playable ? UITheme.TextGold : UITheme.TextDanger, TextAnchor.MiddleCenter, FontStyle.Bold);
             var statusRect = (RectTransform)statusText.transform;
             statusRect.anchorMin = new Vector2(0f, 0f);
@@ -188,17 +188,17 @@ namespace MergeCafe.UI
         private IEnumerator NoticeRoutine(string message)
         {
             _notice.text = message;
-            _notice.canvasRenderer.SetAlpha(1f);
+            _notice.alpha = 1f;
             yield return new WaitForSecondsRealtime(1.4f);
             for (float t = 0f; t < 0.4f; t += Time.unscaledDeltaTime)
             {
                 if (_notice == null)
                     yield break;
-                _notice.canvasRenderer.SetAlpha(1f - t / 0.4f);
+                _notice.alpha = 1f - t / 0.4f;
                 yield return null;
             }
             if (_notice != null)
-                _notice.canvasRenderer.SetAlpha(0f);
+                _notice.alpha = 0f;
             _noticeRoutine = null;
         }
 

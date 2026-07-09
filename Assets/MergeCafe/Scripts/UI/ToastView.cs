@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,7 +12,7 @@ namespace MergeCafe.UI
     public sealed class ToastView : MonoBehaviour
     {
         private CanvasGroup _group;
-        private Text _text;
+        private TextMeshProUGUI _text;
         private Coroutine _routine;
         private string _lastMessage;
         private float _lastShownAt = -10f;
@@ -60,9 +61,8 @@ namespace MergeCafe.UI
         /// <summary>Floating "+N 골드" text rising above the board (§16 주문 완료 피드백).</summary>
         public void FloatGold(string message)
         {
-            Text text = UIFactory.CreateText(transform.parent, "GoldFloat", message, 36,
+            var text = UIFactory.CreateText(transform.parent, "GoldFloat", message, 36,
                 UITheme.TextGold, TextAnchor.MiddleCenter, FontStyle.Bold);
-            text.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1.5f, -1.5f);
 
             var rect = (RectTransform)text.transform;
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -72,7 +72,7 @@ namespace MergeCafe.UI
             StartCoroutine(FloatGoldRoutine(text, rect));
         }
 
-        private static IEnumerator FloatGoldRoutine(Text text, RectTransform rect)
+        private static IEnumerator FloatGoldRoutine(TextMeshProUGUI text, RectTransform rect)
         {
             const float duration = 0.9f;
             Color baseColor = text.color;

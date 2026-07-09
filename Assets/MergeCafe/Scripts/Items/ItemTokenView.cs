@@ -1,6 +1,7 @@
 using MergeCafe.Board;
 using MergeCafe.Data;
 using MergeCafe.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,7 +20,7 @@ namespace MergeCafe.Items
 
         private Image _disc;
         private Image _icon;
-        private Text _levelText;
+        private TextMeshProUGUI _levelText;
 
         public static ItemTokenView CreateOrUpdate(BoardCell cell, ItemInstance item)
         {

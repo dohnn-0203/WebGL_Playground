@@ -1,5 +1,6 @@
 using MergeCafe.Core;
 using MergeCafe.Generators;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -13,8 +14,8 @@ namespace MergeCafe.UI
     {
         private EnergyPool _pool;
         private RectTransform _fill;
-        private Text _valueText;
-        private Text _timerText;
+        private TextMeshProUGUI _valueText;
+        private TextMeshProUGUI _timerText;
 
         public const float Height = 96f;
 
@@ -29,7 +30,7 @@ namespace MergeCafe.UI
             var view = root.gameObject.AddComponent<TotalGaugeView>();
             view._pool = game.Generators.Energy;
 
-            Text title = UIFactory.CreateText(root, "Title", "에너지", 24, UITheme.TextMain,
+            var title = UIFactory.CreateText(root, "Title", "에너지", 24, UITheme.TextMain,
                 TextAnchor.MiddleLeft, FontStyle.Bold);
             var titleRect = (RectTransform)title.transform;
             titleRect.anchorMin = new Vector2(0f, 0.62f);
@@ -69,7 +70,6 @@ namespace MergeCafe.UI
             view._valueText = UIFactory.CreateText(trackRect, "Value", "", 22, UITheme.TextMain,
                 TextAnchor.MiddleCenter, FontStyle.Bold);
             UIFactory.Stretch((RectTransform)view._valueText.transform);
-            view._valueText.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
 
             game.Generators.StatesChanged += view.Refresh;
             view.Refresh();

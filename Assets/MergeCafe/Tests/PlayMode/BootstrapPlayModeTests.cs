@@ -165,6 +165,37 @@ namespace MergeCafe.Tests
         }
 
         [UnityTest]
+        public IEnumerator Tmp_RendersKoreanGlyphs()
+        {
+            var canvasGo = new GameObject("TmpCanvas", typeof(Canvas));
+            var tmp = new GameObject("T").AddComponent<TMPro.TextMeshProUGUI>();
+            tmp.transform.SetParent(canvasGo.transform, false);
+            tmp.font = MergeCafe.UI.UITheme.TmpFont;
+            Assert.IsNotNull(tmp.font, "TMP font asset created");
+            tmp.fontSize = 40;
+            tmp.text = "머지 카페 커피머신 12345";
+            tmp.ForceMeshUpdate();
+            yield return null;
+
+            Assert.Greater(tmp.textInfo.characterCount, 0, "characters laid out");
+            // Every visible character resolved to a glyph in the (dynamic) atlas.
+            int visible = 0;
+            for (int i = 0; i < tmp.textInfo.characterCount; i++)
+            {
+                var ci = tmp.textInfo.characterInfo[i];
+                if (ci.isVisible)
+                {
+                    visible++;
+                    Assert.IsNotNull(ci.fontAsset, $"glyph for '{ci.character}' resolved");
+                }
+            }
+            Assert.Greater(visible, 0, "some visible glyphs");
+
+            Object.Destroy(canvasGo);
+            Object.Destroy(tmp.gameObject);
+        }
+
+        [UnityTest]
         public IEnumerator TitleScreen_Click_StartsGameAndRemovesTitle()
         {
             _bootstrapGo = new GameObject("TestBootstrap");

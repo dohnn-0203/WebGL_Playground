@@ -31,11 +31,11 @@ namespace MergeCafe.UI
             panelRect.anchorMin = panelRect.anchorMax = new Vector2(0.5f, 0.5f);
             panelRect.sizeDelta = new Vector2(780f, 660f);
 
-            Text title = UIFactory.CreateText(panelRect, "Title", "머지 조합표", 34, UITheme.TextMain,
+            var title = UIFactory.CreateText(panelRect, "Title", "머지 조합표", 34, UITheme.TextMain,
                 TextAnchor.MiddleCenter, FontStyle.Bold);
             Row((RectTransform)title.transform, 1f, -16f, -70f);
 
-            Text subtitle = UIFactory.CreateText(panelRect, "Subtitle",
+            var subtitle = UIFactory.CreateText(panelRect, "Subtitle",
                 "같은 아이템 2개를 합치면 다음 단계가 됩니다", 22, UITheme.TextDim);
             Row((RectTransform)subtitle.transform, 1f, -74f, -112f);
 
@@ -63,7 +63,7 @@ namespace MergeCafe.UI
             row.offsetMin = new Vector2(24f, top - 148f);
             row.offsetMax = new Vector2(-24f, top);
 
-            Text label = UIFactory.CreateText(row, "Family", familyName, 24, UITheme.TextGold,
+            var label = UIFactory.CreateText(row, "Family", familyName, 24, UITheme.TextGold,
                 TextAnchor.MiddleCenter, FontStyle.Bold);
             var labelRect = (RectTransform)label.transform;
             labelRect.anchorMin = new Vector2(0f, 0f);
@@ -78,7 +78,7 @@ namespace MergeCafe.UI
                 BuildIcon(row, type, level, x, cell);
                 if (level < 5)
                 {
-                    Text arr = UIFactory.CreateText(row, $"Arrow_{level}", "→", 30, UITheme.TextDim,
+                    var arr = UIFactory.CreateText(row, $"Arrow_{level}", "→", 30, UITheme.TextDim,
                         TextAnchor.MiddleCenter, FontStyle.Bold);
                     var arrRect = (RectTransform)arr.transform;
                     arrRect.anchorMin = new Vector2(0f, 0.5f);
@@ -115,7 +115,7 @@ namespace MergeCafe.UI
             ((RectTransform)icon.transform).offsetMin = new Vector2(8f, 8f);
             ((RectTransform)icon.transform).offsetMax = new Vector2(-8f, -8f);
 
-            Text lv = UIFactory.CreateText(holder, "Lv", $"Lv.{level}", 16, UITheme.TextDim,
+            var lv = UIFactory.CreateText(holder, "Lv", $"Lv.{level}", 16, UITheme.TextDim,
                 TextAnchor.UpperCenter);
             var lvRect = (RectTransform)lv.transform;
             lvRect.anchorMin = new Vector2(0f, 0f);
