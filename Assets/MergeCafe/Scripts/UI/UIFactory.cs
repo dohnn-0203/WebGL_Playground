@@ -51,32 +51,26 @@ namespace MergeCafe.UI
             Stretch((RectTransform)bg.transform);
 
             float hud = UITheme.TopHudHeight;
-            float bottom = UITheme.UpgradePanelHeight;
-            float left = UITheme.GeneratorPanelWidth;
-            float right = UITheme.OrderPanelWidth;
+            float bottom = UITheme.BottomBarHeight;
+            float left = UITheme.LeftPanelWidth;
 
             // TopHud: full-width bar at the very top.
             layout.TopHud = CreatePanel(root, "TopHud", UITheme.HudBg,
                 new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(0f, -hud), new Vector2(0f, 0f));
 
-            // GeneratorPanel: left column between the HUD and the upgrade bar.
-            layout.GeneratorPanel = CreatePanel(root, "GeneratorPanel", UITheme.SidePanelBg,
+            // LeftPanel: energy gauge (top) + order cards, from the HUD to the bottom bar.
+            layout.LeftPanel = CreatePanel(root, "LeftPanel", UITheme.SidePanelBg,
                 new Vector2(0f, 0f), new Vector2(0f, 1f),
                 new Vector2(0f, bottom), new Vector2(left, -hud));
 
-            // OrderPanel: right column between the HUD and the upgrade bar.
-            layout.OrderPanel = CreatePanel(root, "OrderPanel", UITheme.SidePanelBg,
-                new Vector2(1f, 0f), new Vector2(1f, 1f),
-                new Vector2(-right, bottom), new Vector2(0f, -hud));
-
-            // BoardPanel: whatever is left in the middle.
+            // BoardPanel: the whole remaining area to the right of the left column.
             layout.BoardPanel = CreatePanel(root, "BoardPanel", UITheme.BoardPanelBg,
                 new Vector2(0f, 0f), new Vector2(1f, 1f),
-                new Vector2(left, bottom), new Vector2(-right, -hud));
+                new Vector2(left, bottom), new Vector2(0f, -hud));
 
-            // UpgradePanel: full-width bar at the bottom.
-            layout.UpgradePanel = CreatePanel(root, "UpgradePanel", UITheme.UpgradeBg,
+            // BottomBar: full-width bar at the bottom (upgrades).
+            layout.BottomBar = CreatePanel(root, "BottomBar", UITheme.UpgradeBg,
                 new Vector2(0f, 0f), new Vector2(1f, 0f),
                 new Vector2(0f, 0f), new Vector2(0f, bottom));
 

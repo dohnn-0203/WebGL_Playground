@@ -12,24 +12,17 @@ namespace MergeCafe.UI
     public static class CafeDecor
     {
         private static readonly Color WarmGlow = Hex("6B4A2E");
-        private static readonly Color BeanTint = Hex("4A3625");
 
         /// <summary>Call right after the base layout is built and before the board grid.</summary>
         public static void Apply(UiLayout layout)
         {
-            // The five panels tile the whole screen, so the screen background itself is
+            // The panels tile the whole screen, so the screen background itself is
             // occluded — decoration lives on the panels and the board instead.
             AddPanelSheen(layout.TopHud);
-            AddPanelSheen(layout.GeneratorPanel);
-            AddPanelSheen(layout.OrderPanel);
-            AddPanelSheen(layout.UpgradePanel);
+            AddPanelSheen(layout.LeftPanel);
+            AddPanelSheen(layout.BottomBar);
 
             AddBoardBackdrop(layout.BoardPanel);
-
-            // A drifting scatter of faint beans in the roomy lower areas of the side panels.
-            ScatterBeans(layout.GeneratorPanel, seed: 7, count: 5, bottomFraction: 0.42f);
-            ScatterBeans(layout.OrderPanel, seed: 19, count: 4, bottomFraction: 0.18f);
-
             AddHudCup(layout.TopHud);
         }
 
@@ -67,28 +60,6 @@ namespace MergeCafe.UI
             cupRect.anchorMax = new Vector2(0.5f, 0.5f);
             cupRect.sizeDelta = new Vector2(520f, 520f);
             cupRect.SetSiblingIndex(1);
-        }
-
-        private static void ScatterBeans(RectTransform panel, int seed, int count, float bottomFraction)
-        {
-            // Deterministic pseudo-random layout (no Random.* → same look every run).
-            var rng = new System.Random(seed);
-            for (int i = 0; i < count; i++)
-            {
-                Image bean = UIFactory.CreateImage(panel, $"Bean_{i}",
-                    new Color(BeanTint.r, BeanTint.g, BeanTint.b, 0.5f));
-                bean.sprite = CafeArt.CoffeeBean;
-                bean.preserveAspect = true;
-                bean.raycastTarget = false;
-
-                var rect = (RectTransform)bean.transform;
-                rect.anchorMin = new Vector2((float)rng.NextDouble(), (float)rng.NextDouble() * bottomFraction);
-                rect.anchorMax = rect.anchorMin;
-                float size = 30f + (float)rng.NextDouble() * 26f;
-                rect.sizeDelta = new Vector2(size, size);
-                rect.localRotation = Quaternion.Euler(0f, 0f, (float)rng.NextDouble() * 360f);
-                rect.SetAsFirstSibling();
-            }
         }
 
         private static void AddHudCup(RectTransform topHud)

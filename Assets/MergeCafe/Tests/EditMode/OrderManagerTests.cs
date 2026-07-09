@@ -21,7 +21,7 @@ namespace MergeCafe.Tests
             _economy = new EconomyManager();
             _rolls = new Queue<float>();
             _orders = new OrderManager(NextRoll);
-            _orders.SetupInitialOrders();
+            _orders.SetupInitialOrders(AllTypes);
         }
 
         private float NextRoll() => _rolls.Count > 0 ? _rolls.Dequeue() : 0f;
@@ -30,9 +30,9 @@ namespace MergeCafe.Tests
         private static bool AllTypes(ItemType type) => true;
 
         [Test]
-        public void SetupInitialOrders_MatchesSpecTable()
+        public void SetupInitialOrders_HasFiveWithFixedStarters()
         {
-            Assert.AreEqual(3, _orders.Orders.Count);
+            Assert.AreEqual(5, _orders.Orders.Count);
 
             Assert.AreEqual(ItemType.Coffee, _orders.Orders[0].requiredItemType);
             Assert.AreEqual(2, _orders.Orders[0].requiredItemLevel);
@@ -115,7 +115,7 @@ namespace MergeCafe.Tests
             Assert.IsTrue(ok);
             Assert.IsNull(_board.GetItem(cell));
             Assert.AreEqual(30, _economy.Gold);
-            Assert.AreEqual(3, _orders.Orders.Count);
+            Assert.AreEqual(5, _orders.Orders.Count);
             Assert.AreNotEqual(completedId, _orders.Orders[0].orderId);
             Assert.IsNull(_orders.Find(completedId));
         }

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using MergeCafe.Board;
 using MergeCafe.Data;
 
@@ -8,7 +7,6 @@ namespace MergeCafe.Generators
     public enum SpawnResultCode
     {
         Ok,
-        GeneratorLocked,
         NoEnergy,
         BoardFull
     }
@@ -30,78 +28,53 @@ namespace MergeCafe.Generators
     }
 
     /// <summary>
-    /// Owns the three generator states and the spawn rules of webGL_game.md §11.
-    /// The random source is injected so upgrade-chance logic stays testable.
+    /// Owns the shared <see cref="EnergyPool"/> and the spawn rule: tapping a generator
+    /// costs 1 shared energy and drops its Lv.1 item into the first free cell.
     /// </summary>
     public sealed class GeneratorManager
     {
-        private readonly Dictionary<ItemType, GeneratorState> _states =
-            new Dictionary<ItemType, GeneratorState>();
+        public EnergyPool Energy { get; }
 
-        private readonly Func<float> _rng01;
-
-        /// <summary>Raised whenever energy / unlock / upgrade state changes.</summary>
+        /// <summary>Raised when the shared energy changes.</summary>
         public event Action StatesChanged;
 
-        public GeneratorManager(double nowUnix, Func<float> rng01 = null)
+        public GeneratorManager(double nowUnix)
         {
-            _rng01 = rng01 ?? (() => UnityEngine.Random.value);
-            foreach (GeneratorDefinition def in GeneratorCatalog.All)
-                _states[def.Output] = new GeneratorState(def, nowUnix);
+            Energy = new EnergyPool(nowUnix);
+            Energy.Changed += () => StatesChanged?.Invoke();
         }
 
-        public GeneratorState Get(ItemType type) => _states[type];
+        /// <summary>Places the three generator tiles on their starting cells.</summary>
+        public void PlaceInitialGenerators(BoardManager board)
+        {
+            foreach (GeneratorDefinition def in GeneratorCatalog.All)
+            {
+                if (board.IsFreeCell(def.InitialCell))
+                    board.TryPlaceGenerator(def.InitialCell, def.Output);
+            }
+        }
 
-        public IEnumerable<GeneratorState> All => _states.Values;
-
-        /// <summary>Applies wall-clock recovery to all generators. Returns true if any energy changed.</summary>
+        /// <summary>Applies wall-clock energy recovery. Returns true if anything changed.</summary>
         public bool Tick(double nowUnix)
         {
-            bool changed = false;
-            foreach (GeneratorState state in _states.Values)
-            {
-                int before = state.Energy;
-                state.Recover(nowUnix);
-                if (state.Energy != before)
-                    changed = true;
-            }
-
-            if (changed)
-                StatesChanged?.Invoke();
-            return changed;
+            return Energy.Recover(nowUnix);
         }
 
-        /// <summary>
-        /// Spawn rules (§11): needs an unlocked generator, 1+ energy and an empty
-        /// unlocked cell. Upgrade levels 3-4 may produce a Lv.2 item instead of Lv.1.
-        /// </summary>
         public SpawnResult TrySpawn(ItemType type, BoardManager board, double nowUnix)
         {
-            GeneratorState state = Get(type);
-
-            if (!state.Unlocked)
-                return SpawnResult.Fail(SpawnResultCode.GeneratorLocked);
-            if (state.Energy <= 0)
+            if (!Energy.HasEnergy)
                 return SpawnResult.Fail(SpawnResultCode.NoEnergy);
             if (!board.TryFindEmptyCell(out int cellIndex))
                 return SpawnResult.Fail(SpawnResultCode.BoardFull);
 
-            int level = _rng01() < state.Level2Chance ? 2 : 1;
-            var item = new ItemInstance(type, level);
+            Energy.TrySpend(nowUnix);
+            var item = new ItemInstance(type, 1);
             board.TryPlaceItem(cellIndex, item);
-
-            // If the generator was full, its recovery interval starts counting now.
-            if (state.Energy >= state.MaxEnergy)
-                state.LastRecoveryUnix = nowUnix;
-            state.Energy--;
 
             StatesChanged?.Invoke();
             return new SpawnResult(SpawnResultCode.Ok, cellIndex, item);
         }
 
-        public void RaiseStatesChanged()
-        {
-            StatesChanged?.Invoke();
-        }
+        public void RaiseStatesChanged() => StatesChanged?.Invoke();
     }
 }

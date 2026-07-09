@@ -8,9 +8,9 @@ using UnityEngine.UI;
 namespace MergeCafe.Board
 {
     /// <summary>
-    /// Builds and refreshes the 6x6 cell grid inside the board panel.
-    /// The grid lives in a centered square container (AspectRatioFitter) so it
-    /// survives browser window resizes (webGL_game.md §8).
+    /// Builds and refreshes the Cols×Rows cell grid inside the board panel.
+    /// The grid lives in a centered aspect-fitted container so it survives browser
+    /// window resizes (webGL_game.md §8).
     /// </summary>
     public sealed class BoardGridView : MonoBehaviour
     {
@@ -46,7 +46,7 @@ namespace MergeCafe.Board
             RectTransform container = UIFactory.CreateUiObject(padding, "BoardContainer");
             var fitter = container.gameObject.AddComponent<AspectRatioFitter>();
             fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-            fitter.aspectRatio = 1f;
+            fitter.aspectRatio = BoardManager.Cols / (float)BoardManager.Rows;
 
             var view = container.gameObject.AddComponent<BoardGridView>();
             view._board = board;
@@ -90,16 +90,28 @@ namespace MergeCafe.Board
 
             cell.SetVisual(_board.IsUnlocked(index) ? CellVisual.Open : CellVisual.Locked);
 
-            // Keep the token child in sync with the board model.
-            ItemInstance item = _board.GetItem(index);
-            if (item != null)
+            bool suppressed = index == _suppressedTokenIndex;
+
+            // A cell holds a generator, an item, or nothing — keep the child views in sync.
+            if (_board.HasGenerator(index))
             {
-                ItemTokenView token = ItemTokenView.CreateOrUpdate(cell, item);
-                token.gameObject.SetActive(index != _suppressedTokenIndex);
+                ItemTokenView.RemoveFrom(cell);
+                GeneratorTileView tile = GeneratorTileView.CreateOrUpdate(cell, _board.GetGenerator(index));
+                tile.gameObject.SetActive(!suppressed);
             }
             else
             {
-                ItemTokenView.RemoveFrom(cell);
+                GeneratorTileView.RemoveFrom(cell);
+                ItemInstance item = _board.GetItem(index);
+                if (item != null)
+                {
+                    ItemTokenView token = ItemTokenView.CreateOrUpdate(cell, item);
+                    token.gameObject.SetActive(!suppressed);
+                }
+                else
+                {
+                    ItemTokenView.RemoveFrom(cell);
+                }
             }
         }
 
@@ -132,7 +144,11 @@ namespace MergeCafe.Board
         private Transform TokenOf(int index)
         {
             BoardCell cell = GetCell(index);
-            return cell != null ? cell.transform.Find(ItemTokenView.TokenName) : null;
+            if (cell == null)
+                return null;
+            // Whichever occupant view is present (item token or generator tile).
+            Transform token = cell.transform.Find(ItemTokenView.TokenName);
+            return token != null ? token : cell.transform.Find(GeneratorTileView.TileName);
         }
 
         private static IEnumerator PopRoutine(Transform token)

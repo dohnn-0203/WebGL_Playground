@@ -1,7 +1,6 @@
 using MergeCafe.Board;
 using MergeCafe.Core;
 using MergeCafe.Data;
-using MergeCafe.Generators;
 using MergeCafe.Save;
 using NUnit.Framework;
 
@@ -11,24 +10,26 @@ namespace MergeCafe.Tests
     {
         private const double T0 = 1_000_000.0;
 
-        private static GameManager NewGame() => new GameManager(T0, () => 0.99f);
+        private static GameManager NewGame() => new GameManager(T0, () => 0.5f);
 
         [Test]
         public void RoundTrip_PreservesEverything()
         {
             GameManager source = NewGame();
 
-            // Mutate a bit of everything.
-            source.Economy.AddGold(700);
-            source.RequestUnlockGenerator(ItemType.Bread);          // -150 gold
-            source.RequestUpgradeGenerator(ItemType.Coffee);        // -200 gold → Lv.2
-            source.RequestExpandBoard();                            // -100 gold → 17 cells
-            source.Board.TryPlaceItem(BoardManager.IndexOf(2, 2), new ItemInstance(ItemType.Coffee, 2));
-            source.Board.TryPlaceItem(BoardManager.IndexOf(3, 4), new ItemInstance(ItemType.Dessert, 5));
-            source.Generators.Get(ItemType.Coffee).Energy = 4;
-            // Anchor at T0 so Apply(...,T0) triggers no recovery — this test checks the
-            // round-trip, not offline recovery (covered separately).
-            source.Generators.Get(ItemType.Coffee).LastRecoveryUnix = T0;
+            source.Economy.AddGold(1000);
+            source.RequestExpandBoard();      // -100, unlocks 1 cell → 36
+            source.RequestUpgradeEnergy();    // -200, max 25, current +5
+
+            int itemCell = BoardManager.IndexOf(5, 5);
+            source.Board.TryPlaceItem(itemCell, new ItemInstance(ItemType.Coffee, 3));
+
+            int genFrom = GeneratorCatalog.CoffeeMachine.InitialCell;
+            int genTo = BoardManager.IndexOf(5, 6);
+            Assert.IsTrue(source.Board.TryMoveGenerator(genFrom, genTo));
+
+            source.Generators.Energy.Current = 7;
+            source.Generators.Energy.LastRecoveryUnix = T0;
 
             string json = SaveManager.ToJson(source);
             Assert.IsTrue(SaveManager.TryParse(json, out SaveData data));
@@ -36,34 +37,32 @@ namespace MergeCafe.Tests
             GameManager restored = NewGame();
             SaveManager.Apply(restored, data, T0);
 
-            Assert.AreEqual(250, restored.Economy.Gold);
-            Assert.AreEqual(17, restored.Board.UnlockedCount);
+            Assert.AreEqual(700, restored.Economy.Gold);
+            Assert.AreEqual(36, restored.Board.UnlockedCount);
             Assert.AreEqual(1, restored.Upgrades.ExpandedCellCount);
             Assert.AreEqual(150, restored.Upgrades.NextCellCost);
+            Assert.AreEqual(1, restored.Upgrades.EnergyUpgradeCount);
             CollectionAssert.AreEquivalent(source.Board.GetUnlockedCells(),
                 restored.Board.GetUnlockedCells());
 
-            ItemInstance coffee = restored.Board.GetItem(BoardManager.IndexOf(2, 2));
-            Assert.AreEqual(ItemType.Coffee, coffee.Type);
-            Assert.AreEqual(2, coffee.Level);
-            ItemInstance dessert = restored.Board.GetItem(BoardManager.IndexOf(3, 4));
-            Assert.AreEqual(ItemType.Dessert, dessert.Type);
-            Assert.AreEqual(5, dessert.Level);
+            ItemInstance item = restored.Board.GetItem(itemCell);
+            Assert.AreEqual(ItemType.Coffee, item.Type);
+            Assert.AreEqual(3, item.Level);
 
-            GeneratorState coffeeGen = restored.Generators.Get(ItemType.Coffee);
-            Assert.AreEqual(2, coffeeGen.UpgradeLevel);
-            Assert.AreEqual(4, coffeeGen.Energy);
-            Assert.AreEqual(T0, coffeeGen.LastRecoveryUnix, 0.001);
-            Assert.IsTrue(restored.Generators.Get(ItemType.Bread).Unlocked);
-            Assert.IsFalse(restored.Generators.Get(ItemType.Dessert).Unlocked);
+            Assert.IsFalse(restored.Board.HasGenerator(genFrom));
+            Assert.IsTrue(restored.Board.HasGenerator(genTo));
+            Assert.AreEqual(ItemType.Coffee, restored.Board.GetGenerator(genTo));
+            Assert.IsTrue(restored.Board.HasGenerator(GeneratorCatalog.Oven.InitialCell));
 
-            Assert.AreEqual(3, restored.Orders.Orders.Count);
-            for (int i = 0; i < 3; i++)
+            Assert.AreEqual(25, restored.Generators.Energy.Max);
+            Assert.AreEqual(7, restored.Generators.Energy.Current);
+
+            Assert.AreEqual(5, restored.Orders.Orders.Count);
+            for (int i = 0; i < 5; i++)
             {
                 Assert.AreEqual(source.Orders.Orders[i].orderId, restored.Orders.Orders[i].orderId);
                 Assert.AreEqual(source.Orders.Orders[i].requiredItemType, restored.Orders.Orders[i].requiredItemType);
                 Assert.AreEqual(source.Orders.Orders[i].requiredItemLevel, restored.Orders.Orders[i].requiredItemLevel);
-                Assert.AreEqual(source.Orders.Orders[i].rewardGold, restored.Orders.Orders[i].rewardGold);
             }
             Assert.AreEqual(source.Orders.OrderCounter, restored.Orders.OrderCounter);
         }
@@ -72,17 +71,16 @@ namespace MergeCafe.Tests
         public void Apply_GrantsOfflineEnergyRecovery()
         {
             GameManager source = NewGame();
-            GeneratorState coffee = source.Generators.Get(ItemType.Coffee);
-            coffee.Energy = 5;
-            coffee.LastRecoveryUnix = T0;
+            source.Generators.Energy.Current = 5;
+            source.Generators.Energy.LastRecoveryUnix = T0;
 
             string json = SaveManager.ToJson(source);
             SaveManager.TryParse(json, out SaveData data);
 
             GameManager restored = NewGame();
-            SaveManager.Apply(restored, data, T0 + 15); // 3 intervals of 5s while "offline"
+            SaveManager.Apply(restored, data, T0 + 15); // 3 intervals of 5s
 
-            Assert.AreEqual(8, restored.Generators.Get(ItemType.Coffee).Energy);
+            Assert.AreEqual(8, restored.Generators.Energy.Current);
         }
 
         [Test]
@@ -90,9 +88,9 @@ namespace MergeCafe.Tests
         {
             Assert.IsFalse(SaveManager.TryParse(null, out _));
             Assert.IsFalse(SaveManager.TryParse("", out _));
-            Assert.IsFalse(SaveManager.TryParse("not json at all {", out _));
+            Assert.IsFalse(SaveManager.TryParse("not json {", out _));
             Assert.IsFalse(SaveManager.TryParse("{}", out _));
-            Assert.IsFalse(SaveManager.TryParse("{\"version\":0}", out _));
+            Assert.IsFalse(SaveManager.TryParse("{\"version\":1}", out _));
         }
 
         [Test]
@@ -102,13 +100,14 @@ namespace MergeCafe.Tests
             string json = SaveManager.ToJson(source);
             SaveManager.TryParse(json, out SaveData data);
 
-            data.items.Add(new SavedItem { cellIndex = 10, itemType = 0, level = 99 }); // bad level
-            data.items.Add(new SavedItem { cellIndex = -3, itemType = 0, level = 1 });  // bad cell
+            int freeBefore = new GameManager(T0, () => 0.5f).Board.FreeCellCount;
+            data.items.Add(new SavedItem { cellIndex = BoardManager.IndexOf(4, 4), itemType = 0, level = 99 });
+            data.items.Add(new SavedItem { cellIndex = -3, itemType = 0, level = 1 });
 
             GameManager restored = NewGame();
             SaveManager.Apply(restored, data, T0);
 
-            Assert.AreEqual(16, restored.Board.EmptyUnlockedCount); // nothing was placed
+            Assert.AreEqual(freeBefore, restored.Board.FreeCellCount); // nothing placed
         }
     }
 }

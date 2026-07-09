@@ -5,15 +5,17 @@ using MergeCafe.Data;
 namespace MergeCafe.Board
 {
     /// <summary>
-    /// Pure-C# board state: 6x6 cells, lock state and item occupancy (webGL_game.md §9).
-    /// No UnityEngine scene dependencies so it is fully unit-testable.
+    /// Pure-C# board state for the large play grid. A cell can hold at most one of:
+    /// an item, or a generator tile. Generators live on the board and are draggable
+    /// but never merge; items merge by the usual rules. Fully unit-testable.
     /// </summary>
     public sealed class BoardManager
     {
-        public const int Size = 6;
-        public const int CellCount = Size * Size;
+        public const int Cols = 9;
+        public const int Rows = 7;
+        public const int CellCount = Cols * Rows;
 
-        /// <summary>Raised with the cell index whenever that cell's item or lock state changes.</summary>
+        /// <summary>Raised with the cell index whenever that cell's contents change.</summary>
         public event Action<int> CellChanged;
 
         /// <summary>Raised after any board mutation (for HUD counters etc).</summary>
@@ -21,23 +23,27 @@ namespace MergeCafe.Board
 
         private readonly bool[] _unlocked = new bool[CellCount];
         private readonly ItemInstance[] _items = new ItemInstance[CellCount];
+        private readonly int[] _generator = new int[CellCount]; // ItemType as int, or -1
 
         public BoardManager()
         {
             for (int i = 0; i < CellCount; i++)
+            {
                 _unlocked[i] = IsInInitialRegion(i);
+                _generator[i] = -1;
+            }
         }
 
-        public static int RowOf(int index) => index / Size;
-        public static int ColOf(int index) => index % Size;
-        public static int IndexOf(int row, int col) => row * Size + col;
+        public static int RowOf(int index) => index / Cols;
+        public static int ColOf(int index) => index % Cols;
+        public static int IndexOf(int row, int col) => row * Cols + col;
 
-        /// <summary>Initial unlocked area: the centered 4x4 region (16 cells).</summary>
+        /// <summary>Initial unlocked area: a centered block, leaving a locked border to expand into.</summary>
         public static bool IsInInitialRegion(int index)
         {
             int row = RowOf(index);
             int col = ColOf(index);
-            return row >= 1 && row <= 4 && col >= 1 && col <= 4;
+            return row >= 1 && row <= Rows - 2 && col >= 1 && col <= Cols - 2;
         }
 
         public bool IsValidIndex(int index) => index >= 0 && index < CellCount;
@@ -46,8 +52,13 @@ namespace MergeCafe.Board
 
         public ItemInstance GetItem(int index) => IsValidIndex(index) ? _items[index] : null;
 
-        /// <summary>Unlocked and holding no item.</summary>
-        public bool IsEmptyCell(int index) => IsUnlocked(index) && _items[index] == null;
+        public bool HasGenerator(int index) => IsValidIndex(index) && _generator[index] >= 0;
+
+        public ItemType GetGenerator(int index) => (ItemType)_generator[index];
+
+        /// <summary>Unlocked and free of both items and generators — an item may be placed here.</summary>
+        public bool IsFreeCell(int index) =>
+            IsUnlocked(index) && _items[index] == null && _generator[index] < 0;
 
         public int UnlockedCount
         {
@@ -60,23 +71,23 @@ namespace MergeCafe.Board
             }
         }
 
-        public int EmptyUnlockedCount
+        public int FreeCellCount
         {
             get
             {
                 int count = 0;
                 for (int i = 0; i < CellCount; i++)
-                    if (_unlocked[i] && _items[i] == null) count++;
+                    if (IsFreeCell(i)) count++;
                 return count;
             }
         }
 
-        /// <summary>Finds the first empty unlocked cell in row-major order.</summary>
+        /// <summary>First free cell in row-major order.</summary>
         public bool TryFindEmptyCell(out int index)
         {
             for (int i = 0; i < CellCount; i++)
             {
-                if (_unlocked[i] && _items[i] == null)
+                if (IsFreeCell(i))
                 {
                     index = i;
                     return true;
@@ -88,7 +99,7 @@ namespace MergeCafe.Board
 
         public bool TryPlaceItem(int index, ItemInstance item)
         {
-            if (item == null || !IsEmptyCell(index))
+            if (item == null || !IsFreeCell(index))
                 return false;
 
             _items[index] = item;
@@ -105,6 +116,31 @@ namespace MergeCafe.Board
             _items[index] = null;
             RaiseCellChanged(index);
             return removed;
+        }
+
+        // ---- Generators on the board ----
+
+        public bool TryPlaceGenerator(int index, ItemType type)
+        {
+            if (!IsFreeCell(index))
+                return false;
+
+            _generator[index] = (int)type;
+            RaiseCellChanged(index);
+            return true;
+        }
+
+        /// <summary>Moves a generator to a free cell. Returns false if it can't.</summary>
+        public bool TryMoveGenerator(int fromIndex, int toIndex)
+        {
+            if (!HasGenerator(fromIndex) || fromIndex == toIndex || !IsFreeCell(toIndex))
+                return false;
+
+            _generator[toIndex] = _generator[fromIndex];
+            _generator[fromIndex] = -1;
+            RaiseCellChanged(fromIndex);
+            RaiseCellChanged(toIndex);
+            return true;
         }
 
         public bool TryUnlockCell(int index)
@@ -129,27 +165,21 @@ namespace MergeCafe.Board
             return -1;
         }
 
-        /// <summary>All currently unlocked cell indices (for saving).</summary>
         public List<int> GetUnlockedCells()
         {
             var result = new List<int>();
             for (int i = 0; i < CellCount; i++)
-            {
-                if (_unlocked[i])
-                    result.Add(i);
-            }
+                if (_unlocked[i]) result.Add(i);
             return result;
         }
 
-        /// <summary>
-        /// Bulk restore for save loading: clears every item, applies the given lock
-        /// set, then notifies once per cell so views resync.
-        /// </summary>
+        /// <summary>Bulk restore for save loading: clears everything, applies locks, notifies per cell.</summary>
         public void ResetForLoad(IEnumerable<int> unlockedIndices)
         {
             for (int i = 0; i < CellCount; i++)
             {
                 _items[i] = null;
+                _generator[i] = -1;
                 _unlocked[i] = false;
             }
 

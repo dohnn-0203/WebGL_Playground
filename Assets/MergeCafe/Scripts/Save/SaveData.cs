@@ -14,10 +14,15 @@ namespace MergeCafe.Save
     [Serializable]
     public sealed class SavedGenerator
     {
+        public int cellIndex;
         public int itemType;
-        public bool unlocked;
-        public int upgradeLevel;
-        public int energy;
+    }
+
+    [Serializable]
+    public sealed class SavedEnergy
+    {
+        public int current;
+        public int max;
         public double lastRecoveryUnix;
     }
 
@@ -31,17 +36,19 @@ namespace MergeCafe.Save
     }
 
     /// <summary>
-    /// JsonUtility-serializable snapshot of everything webGL_game.md §14 requires:
-    /// gold, board locks, board items, generator states and the three open orders.
+    /// JsonUtility-serializable snapshot: gold, board locks, board items, on-board
+    /// generator positions, the shared energy pool, upgrades, and the open orders.
     /// </summary>
     [Serializable]
     public sealed class SaveData
     {
-        public int version = 1;
+        public int version = 2;
         public long gold;
         public int[] unlockedCells;
         public int expandedCellCount;
+        public int energyUpgradeCount;
         public int orderCounter;
+        public SavedEnergy energy = new SavedEnergy();
         public List<SavedItem> items = new List<SavedItem>();
         public List<SavedGenerator> generators = new List<SavedGenerator>();
         public List<SavedOrder> orders = new List<SavedOrder>();

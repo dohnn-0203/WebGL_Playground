@@ -1,49 +1,54 @@
 using System;
 using System.Collections.Generic;
 using MergeCafe.Board;
-using MergeCafe.Data;
 using MergeCafe.Generators;
 
 namespace MergeCafe.Economy
 {
     /// <summary>
-    /// Growth systems of webGL_game.md §13: board cell unlocking with increasing
-    /// cost (100, +50 each) and generator upgrades using the §11 upgrade table.
+    /// Growth systems: unlock locked board cells (increasing cost) and raise the
+    /// shared energy pool's maximum. Both spend gold.
     /// </summary>
     public sealed class UpgradeManager
     {
         public const int FirstCellCost = 100;
         public const int CellCostIncrement = 50;
 
-        /// <summary>Locked cells in the order they get unlocked: closest to the board center first.</summary>
+        public const int EnergyStep = 5;      // +max energy per upgrade
+        public const int EnergyBaseCost = 200;
+        public const int EnergyCostIncrement = 150;
+
+        /// <summary>Locked cells ordered by proximity to the board centre.</summary>
         public static readonly int[] CellUnlockOrder = BuildUnlockOrder();
 
         private int _expandedCellCount;
+        private int _energyUpgradeCount;
 
-        /// <summary>Raised after a successful expansion or upgrade purchase.</summary>
         public event Action Changed;
 
-        /// <summary>Number of cells unlocked beyond the initial 16 (persisted in saves).</summary>
         public int ExpandedCellCount
         {
             get => _expandedCellCount;
             set => _expandedCellCount = Math.Max(0, value);
         }
 
-        public int NextCellCost => FirstCellCost + CellCostIncrement * _expandedCellCount;
-
-        public static bool IsBoardFullyUnlocked(BoardManager board)
+        public int EnergyUpgradeCount
         {
-            return board.UnlockedCount >= BoardManager.CellCount;
+            get => _energyUpgradeCount;
+            set => _energyUpgradeCount = Math.Max(0, value);
         }
+
+        public int NextCellCost => FirstCellCost + CellCostIncrement * _expandedCellCount;
+        public int NextEnergyCost => EnergyBaseCost + EnergyCostIncrement * _energyUpgradeCount;
+
+        public static bool IsBoardFullyUnlocked(BoardManager board) =>
+            board.UnlockedCount >= BoardManager.CellCount;
 
         public int NextLockedCell(BoardManager board)
         {
             foreach (int index in CellUnlockOrder)
-            {
                 if (!board.IsUnlocked(index))
                     return index;
-            }
             return -1;
         }
 
@@ -52,7 +57,6 @@ namespace MergeCafe.Economy
             int cellIndex = NextLockedCell(board);
             if (cellIndex < 0)
                 return false;
-
             if (!economy.TrySpend(NextCellCost))
                 return false;
 
@@ -62,44 +66,48 @@ namespace MergeCafe.Economy
             return true;
         }
 
-        public bool TryUpgradeGenerator(GeneratorState state, EconomyManager economy)
+        public bool TryUpgradeEnergy(EnergyPool pool, EconomyManager economy)
         {
-            if (!state.Unlocked || state.UpgradeLevel >= GeneratorCatalog.MaxUpgradeLevel)
+            if (!economy.TrySpend(NextEnergyCost))
                 return false;
 
-            int cost = GeneratorCatalog.UpgradeCost(state.UpgradeLevel + 1);
-            if (!economy.TrySpend(cost))
-                return false;
-
-            state.UpgradeLevel++;
+            pool.Max += EnergyStep;
+            pool.Current += EnergyStep; // reward the purchase with immediate energy
+            _energyUpgradeCount++;
+            pool.RaiseChanged();
             Changed?.Invoke();
             return true;
+        }
+
+        /// <summary>Re-applies stored energy upgrades to a freshly-created pool (save load).</summary>
+        public void ApplyEnergyUpgradesTo(EnergyPool pool)
+        {
+            pool.Max = EnergyPool.BaseMax + EnergyStep * _energyUpgradeCount;
         }
 
         private static int[] BuildUnlockOrder()
         {
             var locked = new List<int>();
             for (int i = 0; i < BoardManager.CellCount; i++)
-            {
                 if (!BoardManager.IsInInitialRegion(i))
                     locked.Add(i);
-            }
 
-            // Center of the 6x6 grid sits between cells at (2.5, 2.5).
+            float cr = (BoardManager.Rows - 1) * 0.5f;
+            float cc = (BoardManager.Cols - 1) * 0.5f;
             locked.Sort((a, b) =>
             {
-                float da = DistanceFromCenter(a);
-                float db = DistanceFromCenter(b);
+                float da = Dist(a, cr, cc);
+                float db = Dist(b, cr, cc);
                 int byDistance = da.CompareTo(db);
                 return byDistance != 0 ? byDistance : a.CompareTo(b);
             });
             return locked.ToArray();
         }
 
-        private static float DistanceFromCenter(int index)
+        private static float Dist(int index, float cr, float cc)
         {
-            float dr = BoardManager.RowOf(index) - 2.5f;
-            float dc = BoardManager.ColOf(index) - 2.5f;
+            float dr = BoardManager.RowOf(index) - cr;
+            float dc = BoardManager.ColOf(index) - cc;
             return dr * dr + dc * dc;
         }
     }

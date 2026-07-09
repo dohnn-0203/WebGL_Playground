@@ -51,12 +51,10 @@ namespace MergeCafe.Core
             CafeDecor.Apply(_ui);
 
             _hud = HudView.Build(_ui.TopHud);
-            _hud.SetGold(0);
-
-            UIFactory.CreatePanelTitle(_ui.GeneratorPanel, "생성기");
-            UIFactory.CreatePanelTitle(_ui.OrderPanel, "주문");
 
             _game = new GameManager(TimeUtil.NowUnixSeconds());
+
+            TotalGaugeView.Build(_ui.LeftPanel, _game);
             _gridView = BoardGridView.Build(_ui.BoardPanel, _game.Board);
 
             var dragController = DragController.Build(_ui.DragLayer, _game, _gridView);
@@ -72,13 +70,9 @@ namespace MergeCafe.Core
             };
             _game.OrderCompleted += order => _toast.FloatGold($"+{order.rewardGold} 골드");
 
-            GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Coffee, 0);
-            GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Bread, 1);
-            GeneratorButtonView.Build(_ui.GeneratorPanel, _game, ItemType.Dessert, 2);
-
             _orderCards = new OrderCardView[OrderManager.OrderCount];
             for (int i = 0; i < OrderManager.OrderCount; i++)
-                _orderCards[i] = OrderCardView.Build(_ui.OrderPanel, _game, i);
+                _orderCards[i] = OrderCardView.Build(_ui.LeftPanel, _game, i);
 
             _game.Orders.OrdersChanged += RebindOrderCards;
             _game.Board.BoardChanged += RefreshOrderButtons;
@@ -86,10 +80,7 @@ namespace MergeCafe.Core
             _game.Economy.GoldChanged += gold => _hud.SetGold(gold);
             _hud.SetGold(_game.Economy.Gold);
 
-            _game.Board.BoardChanged += RefreshHudSpace;
-            RefreshHudSpace();
-
-            UpgradePanelView.Build(_ui.UpgradePanel, _game);
+            UpgradePanelView.Build(_ui.BottomBar, _game);
 
             // Restore progress (if any), then autosave after every successful action (§14).
             SaveManager.TryLoadInto(_game, TimeUtil.NowUnixSeconds());
@@ -129,11 +120,6 @@ namespace MergeCafe.Core
             if (_game == null)
                 return;
             _game.Tick(TimeUtil.NowUnixSeconds());
-        }
-
-        private void RefreshHudSpace()
-        {
-            _hud.SetBoardSpace(_game.Board.EmptyUnlockedCount, _game.Board.UnlockedCount);
         }
 
         private void RebindOrderCards()

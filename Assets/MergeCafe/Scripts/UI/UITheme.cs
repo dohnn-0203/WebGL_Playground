@@ -9,10 +9,13 @@ namespace MergeCafe.UI
     public static class UITheme
     {
         // ---- Layout constants (1920x1080 reference resolution) ----
-        public const float TopHudHeight = 90f;
-        public const float UpgradePanelHeight = 120f;
-        public const float GeneratorPanelWidth = 300f;
-        public const float OrderPanelWidth = 360f;
+        public const float TopHudHeight = 84f;
+        public const float BottomBarHeight = 110f;
+        public const float LeftPanelWidth = 380f;
+
+        // ---- Energy gauge ----
+        public static readonly Color EnergyFill = Hex("54C6EC");
+        public static readonly Color EnergyTrack = Hex("1E2A30");
 
         // ---- Screen / panels ----
         public static readonly Color ScreenBg = Hex("1B1410");

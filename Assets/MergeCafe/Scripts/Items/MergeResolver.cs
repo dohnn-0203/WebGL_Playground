@@ -37,7 +37,7 @@ namespace MergeCafe.Items
                 return false;
 
             ItemInstance source = board.GetItem(fromIndex);
-            if (source == null || !board.IsUnlocked(toIndex))
+            if (source == null || !board.IsUnlocked(toIndex) || board.HasGenerator(toIndex))
                 return false;
 
             ItemInstance target = board.GetItem(toIndex);
@@ -56,6 +56,10 @@ namespace MergeCafe.Items
 
             if (!board.IsUnlocked(toIndex))
                 return MoveOutcome.RejectedLocked;
+
+            // Cannot drop an item onto a generator tile.
+            if (board.HasGenerator(toIndex))
+                return MoveOutcome.RejectedIncompatible;
 
             ItemInstance target = board.GetItem(toIndex);
             if (target == null)

@@ -13,21 +13,22 @@ namespace MergeCafe.Board
         Reject
     }
 
-    /// <summary>Receives the drag life cycle events raised by board cells.</summary>
+    /// <summary>Receives the drag / tap events raised by board cells.</summary>
     public interface IBoardDragHandler
     {
         void OnCellBeginDrag(BoardCell cell, PointerEventData eventData);
         void OnCellDrag(PointerEventData eventData);
         void OnCellEndDrag(PointerEventData eventData);
+        void OnCellClick(BoardCell cell, PointerEventData eventData);
     }
 
     /// <summary>
-    /// UI for a single board cell. Items dropped onto the board are resolved by
-    /// raycasting against this cell's background image (webGL_game.md §15).
-    /// Drag begins on the cell that holds the item (tokens don't raycast).
+    /// UI for a single board cell. Items/generators are resolved by raycasting
+    /// against this cell's background image (webGL_game.md §15). Dragging moves the
+    /// occupant; a tap (no drag) on a generator tile produces an item.
     /// </summary>
     public sealed class BoardCell : MonoBehaviour,
-        IBeginDragHandler, IDragHandler, IEndDragHandler
+        IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
     {
         public int Index { get; private set; }
 
@@ -51,11 +52,14 @@ namespace MergeCafe.Board
             int row = BoardManager.RowOf(index);
             int col = BoardManager.ColOf(index);
 
+            // Row 0 is the TOP row, so invert row for the vertical anchor.
             var rect = (RectTransform)background.transform;
-            rect.anchorMin = new Vector2(col / 6f, (5 - row) / 6f);
-            rect.anchorMax = new Vector2((col + 1) / 6f, (6 - row) / 6f);
-            rect.offsetMin = new Vector2(5f, 5f);
-            rect.offsetMax = new Vector2(-5f, -5f);
+            rect.anchorMin = new Vector2(col / (float)BoardManager.Cols,
+                (BoardManager.Rows - 1 - row) / (float)BoardManager.Rows);
+            rect.anchorMax = new Vector2((col + 1) / (float)BoardManager.Cols,
+                (BoardManager.Rows - row) / (float)BoardManager.Rows);
+            rect.offsetMin = new Vector2(4f, 4f);
+            rect.offsetMax = new Vector2(-4f, -4f);
 
             var cell = background.gameObject.AddComponent<BoardCell>();
             cell.Index = index;
@@ -104,6 +108,11 @@ namespace MergeCafe.Board
         public void OnEndDrag(PointerEventData eventData)
         {
             _dragHandler?.OnCellEndDrag(eventData);
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            _dragHandler?.OnCellClick(this, eventData);
         }
     }
 }

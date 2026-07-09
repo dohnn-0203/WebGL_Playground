@@ -62,28 +62,34 @@ namespace MergeCafe.Tests
             Assert.IsNotNull(GameObject.Find("Canvas"), "canvas");
             Assert.IsNotNull(Object.FindObjectOfType<EventSystem>(), "event system");
             Assert.IsNotNull(GameObject.Find("Cell_00"), "first cell");
-            Assert.IsNotNull(GameObject.Find("Cell_35"), "last cell");
-            Assert.IsNotNull(GameObject.Find("Generator_Coffee"), "coffee generator button");
-            Assert.IsNotNull(GameObject.Find("OrderCard_2"), "third order card");
+            Assert.IsNotNull(GameObject.Find("Cell_62"), "last cell");
+            Assert.IsNotNull(GameObject.Find("OrderCard_4"), "fifth order card");
+            Assert.IsNotNull(GameObject.Find("TotalGauge"), "shared energy gauge");
 
             GameManager game = bootstrap.Game;
             Assert.IsNotNull(game);
             Assert.AreEqual(0, game.Economy.Gold);
-            Assert.AreEqual(16, game.Board.UnlockedCount);
-            Assert.AreEqual(3, game.Orders.Orders.Count);
+            Assert.AreEqual(35, game.Board.UnlockedCount);
+            Assert.AreEqual(5, game.Orders.Orders.Count);
 
-            // --- Spawn two coffees and merge them ---
+            // Generators are placed on the board.
+            Assert.IsTrue(game.Board.HasGenerator(GeneratorCatalog.CoffeeMachine.InitialCell));
+            Assert.AreEqual(20, game.Generators.Energy.Current);
+
+            // --- Spawn two coffees (shared energy) and merge them ---
             double now = TimeUtil.NowUnixSeconds();
             Assert.IsTrue(game.RequestSpawn(ItemType.Coffee, now));
             Assert.IsTrue(game.RequestSpawn(ItemType.Coffee, now));
+            Assert.AreEqual(18, game.Generators.Energy.Current);
             yield return null;
 
+            // First free cells are (1,1) and (1,3) — (1,2) holds the coffee generator.
             int first = BoardManager.IndexOf(1, 1);
-            int second = BoardManager.IndexOf(1, 2);
+            int second = BoardManager.IndexOf(1, 3);
             Assert.IsNotNull(game.Board.GetItem(first));
             Assert.IsNotNull(game.Board.GetItem(second));
 
-            var outcome = game.RequestMove(first, second);
+            var outcome = game.RequestMoveItem(first, second);
             Assert.AreEqual(MergeCafe.Items.MoveOutcome.Merged, outcome);
             Assert.AreEqual(2, game.Board.GetItem(second).Level);
             yield return null;
@@ -97,7 +103,7 @@ namespace MergeCafe.Tests
             var restored = new GameManager(now);
             Assert.IsTrue(SaveManager.TryLoadInto(restored, now));
             Assert.AreEqual(2, restored.Board.GetItem(second).Level);
-            Assert.AreEqual(18, restored.Generators.Get(ItemType.Coffee).Energy);
+            Assert.AreEqual(18, restored.Generators.Energy.Current);
         }
 
         [UnityTest]

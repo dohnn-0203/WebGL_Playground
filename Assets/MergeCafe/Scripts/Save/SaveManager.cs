@@ -15,9 +15,7 @@ namespace MergeCafe.Save
     /// </summary>
     public static class SaveManager
     {
-        public const string PrefsKey = "MergeCafe.Save.v1";
-
-        // ---- Pure pipeline ----
+        public const string PrefsKey = "MergeCafe.Save.v2";
 
         public static SaveData Capture(GameManager game)
         {
@@ -26,11 +24,28 @@ namespace MergeCafe.Save
                 gold = game.Economy.Gold,
                 unlockedCells = game.Board.GetUnlockedCells().ToArray(),
                 expandedCellCount = game.Upgrades.ExpandedCellCount,
-                orderCounter = game.Orders.OrderCounter
+                energyUpgradeCount = game.Upgrades.EnergyUpgradeCount,
+                orderCounter = game.Orders.OrderCounter,
+                energy = new SavedEnergy
+                {
+                    current = game.Generators.Energy.Current,
+                    max = game.Generators.Energy.Max,
+                    lastRecoveryUnix = game.Generators.Energy.LastRecoveryUnix
+                }
             };
 
             for (int i = 0; i < Board.BoardManager.CellCount; i++)
             {
+                if (game.Board.HasGenerator(i))
+                {
+                    data.generators.Add(new SavedGenerator
+                    {
+                        cellIndex = i,
+                        itemType = (int)game.Board.GetGenerator(i)
+                    });
+                    continue;
+                }
+
                 ItemInstance item = game.Board.GetItem(i);
                 if (item != null)
                 {
@@ -41,18 +56,6 @@ namespace MergeCafe.Save
                         level = item.Level
                     });
                 }
-            }
-
-            foreach (GeneratorState state in game.Generators.All)
-            {
-                data.generators.Add(new SavedGenerator
-                {
-                    itemType = (int)state.Definition.Output,
-                    unlocked = state.Unlocked,
-                    upgradeLevel = state.UpgradeLevel,
-                    energy = state.Energy,
-                    lastRecoveryUnix = state.LastRecoveryUnix
-                });
             }
 
             foreach (CafeOrder order in game.Orders.Orders)
@@ -69,10 +72,7 @@ namespace MergeCafe.Save
             return data;
         }
 
-        public static string ToJson(GameManager game)
-        {
-            return JsonUtility.ToJson(Capture(game));
-        }
+        public static string ToJson(GameManager game) => JsonUtility.ToJson(Capture(game));
 
         public static bool TryParse(string json, out SaveData data)
         {
@@ -89,7 +89,7 @@ namespace MergeCafe.Save
                 return false;
             }
 
-            if (data == null || data.version < 1 ||
+            if (data == null || data.version < 2 ||
                 data.unlockedCells == null || data.unlockedCells.Length == 0 ||
                 data.orders == null || data.orders.Count != OrderManager.OrderCount)
             {
@@ -104,8 +104,14 @@ namespace MergeCafe.Save
         {
             game.Economy.SetGold(data.gold);
             game.Upgrades.ExpandedCellCount = data.expandedCellCount;
+            game.Upgrades.EnergyUpgradeCount = data.energyUpgradeCount;
 
             game.Board.ResetForLoad(data.unlockedCells);
+
+            // Generators first (they occupy cells), then items into the free cells.
+            foreach (SavedGenerator saved in data.generators)
+                game.Board.TryPlaceGenerator(saved.cellIndex, (ItemType)saved.itemType);
+
             foreach (SavedItem saved in data.items)
             {
                 var type = (ItemType)saved.itemType;
@@ -113,27 +119,22 @@ namespace MergeCafe.Save
                     game.Board.TryPlaceItem(saved.cellIndex, new ItemInstance(type, saved.level));
             }
 
-            foreach (SavedGenerator saved in data.generators)
-            {
-                var type = (ItemType)saved.itemType;
-                GeneratorState state = game.Generators.Get(type);
-                state.Unlocked = saved.unlocked || state.Definition.UnlockCost == 0;
-                state.UpgradeLevel = Mathf.Clamp(saved.upgradeLevel, 1, GeneratorCatalog.MaxUpgradeLevel);
-                state.Energy = Mathf.Clamp(saved.energy, 0, state.MaxEnergy);
-                state.LastRecoveryUnix = saved.lastRecoveryUnix;
-            }
+            EnergyPool pool = game.Generators.Energy;
+            game.Upgrades.ApplyEnergyUpgradesTo(pool);
+            if (data.energy != null && data.energy.max > 0)
+                pool.Max = data.energy.max;
+            pool.Current = Mathf.Clamp(data.energy != null ? data.energy.current : pool.Max, 0, pool.Max);
+            pool.LastRecoveryUnix = data.energy != null ? data.energy.lastRecoveryUnix : nowUnix;
 
             var orders = new List<CafeOrder>();
             foreach (SavedOrder saved in data.orders)
                 orders.Add(new CafeOrder(saved.orderId, (ItemType)saved.itemType, saved.level, saved.rewardGold));
             game.Orders.LoadOrders(orders, data.orderCounter);
 
-            // Energy earned while the page was closed (§11 회복 주기).
+            // Energy earned while the page was closed.
             game.Generators.Tick(nowUnix);
             game.Generators.RaiseStatesChanged();
         }
-
-        // ---- PlayerPrefs layer ----
 
         public static bool HasSave() => PlayerPrefs.HasKey(PrefsKey);
 
@@ -143,7 +144,6 @@ namespace MergeCafe.Save
             PlayerPrefs.Save();
         }
 
-        /// <summary>Loads and applies the stored save. Returns false when absent/corrupt.</summary>
         public static bool TryLoadInto(GameManager game, double nowUnix)
         {
             if (!HasSave())

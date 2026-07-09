@@ -3,8 +3,9 @@ using UnityEngine;
 namespace MergeCafe.UI
 {
     /// <summary>
-    /// References to the runtime-built root panels, matching the layout in webGL_game.md §7-8.
-    /// Filled by <see cref="UIFactory.BuildBaseLayout"/> and handed to the game systems.
+    /// References to the runtime-built root panels. New layout: a left column holds
+    /// the shared energy gauge and the order cards, the board fills the rest, and a
+    /// slim bottom bar holds the upgrades. There is no right panel.
     /// </summary>
     public sealed class UiLayout
     {
@@ -12,18 +13,12 @@ namespace MergeCafe.UI
         public RectTransform Root;
 
         public RectTransform TopHud;
-        public RectTransform GeneratorPanel;
+        public RectTransform LeftPanel;
         public RectTransform BoardPanel;
-        public RectTransform OrderPanel;
-        public RectTransform UpgradePanel;
+        public RectTransform BottomBar;
 
-        /// <summary>Full-screen layer that dragged items are re-parented to (always on top of panels).</summary>
         public RectTransform DragLayer;
-
-        /// <summary>Full-screen layer for toast messages.</summary>
         public RectTransform ToastLayer;
-
-        /// <summary>Full-screen layer for modal popups (confirm dialogs).</summary>
         public RectTransform PopupLayer;
     }
 }

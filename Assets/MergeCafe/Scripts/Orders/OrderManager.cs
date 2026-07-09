@@ -12,7 +12,7 @@ namespace MergeCafe.Orders
     /// </summary>
     public sealed class OrderManager
     {
-        public const int OrderCount = 3;
+        public const int OrderCount = 5;
 
         // Level weights: Lv.2 45%, Lv.3 35%, Lv.4 15%, Lv.5 5%.
         private const float Lv2Threshold = 0.45f;
@@ -32,13 +32,15 @@ namespace MergeCafe.Orders
             _rng01 = rng01 ?? (() => UnityEngine.Random.value);
         }
 
-        /// <summary>Fixed starter orders from the spec table (§12 초기 주문).</summary>
-        public void SetupInitialOrders()
+        /// <summary>Fixed starter orders (§12) plus generated ones up to OrderCount.</summary>
+        public void SetupInitialOrders(Func<ItemType, bool> isTypeUnlocked)
         {
             _orders.Clear();
             _orders.Add(new CafeOrder(NextOrderId(), ItemType.Coffee, 2, 30));
             _orders.Add(new CafeOrder(NextOrderId(), ItemType.Coffee, 3, 70));
             _orders.Add(new CafeOrder(NextOrderId(), ItemType.Bread, 2, 50));
+            while (_orders.Count < OrderCount)
+                _orders.Add(GenerateOrder(isTypeUnlocked));
             OrdersChanged?.Invoke();
         }
 
