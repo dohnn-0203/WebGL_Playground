@@ -23,12 +23,8 @@ namespace MergeCafe.UI
         private static readonly Color CardBg = Hex("2E2420");
         private static readonly Color CardLocked = Hex("241C18");
 
-        /// <summary>A future game slot. Extend this list to add more games to the hub.</summary>
-        private static readonly (string name, string subtitle)[] ComingSoon =
-        {
-            ("숫자 합치기", "준비 중"),
-            ("카드 짝맞추기", "준비 중"),
-        };
+        /// <summary>Number of "개발중" placeholder slots for future games.</summary>
+        private const int ComingSoonCount = 2;
 
         public static TitleScreenView Build(Action onStartMerge)
         {
@@ -75,17 +71,16 @@ namespace MergeCafe.UI
                 UITheme.TextDim, TextAnchor.MiddleCenter);
             Center((RectTransform)subtitle.transform, 250f, 60f, 1200f);
 
-            // Cards: merge game first (playable), then placeholders.
-            int total = 1 + ComingSoon.Length;
+            // Cards: merge game first (playable), then "개발중" placeholders.
+            int total = 1 + ComingSoonCount;
             const float cardW = 300f, gap = 44f;
             float startX = -(total - 1) * 0.5f * (cardW + gap);
 
             view.BuildCard(content, startX, "머지 카페", "플레이 가능", true, view.SelectMerge);
-            for (int i = 0; i < ComingSoon.Length; i++)
+            for (int i = 0; i < ComingSoonCount; i++)
             {
                 float x = startX + (i + 1) * (cardW + gap);
-                view.BuildCard(content, x, ComingSoon[i].name, ComingSoon[i].subtitle, false,
-                    view.ShowComingSoon);
+                view.BuildCard(content, x, "개발중", "", false, view.ShowComingSoon);
             }
 
             view._notice = UIFactory.CreateText(content, "Notice", "", 32, UITheme.TextMain,
@@ -187,7 +182,7 @@ namespace MergeCafe.UI
                 return;
             if (_noticeRoutine != null)
                 StopCoroutine(_noticeRoutine);
-            _noticeRoutine = StartCoroutine(NoticeRoutine("아직 준비 중이에요. 곧 만나요!"));
+            _noticeRoutine = StartCoroutine(NoticeRoutine("아직 개발중이에요. 곧 만나요!"));
         }
 
         private IEnumerator NoticeRoutine(string message)
