@@ -32,9 +32,12 @@ namespace MergeCafe.Tests
             if (_bootstrapGo != null)
                 Object.Destroy(_bootstrapGo);
 
-            var canvas = GameObject.Find("Canvas");
-            if (canvas != null)
-                Object.Destroy(canvas);
+            foreach (string canvasName in new[] { "Canvas", "TitleCanvas" })
+            {
+                var canvas = GameObject.Find(canvasName);
+                if (canvas != null)
+                    Object.Destroy(canvas);
+            }
 
             EventSystem eventSystem = Object.FindObjectOfType<EventSystem>();
             if (eventSystem != null)
@@ -46,7 +49,14 @@ namespace MergeCafe.Tests
         {
             _bootstrapGo = new GameObject("TestBootstrap");
             var bootstrap = _bootstrapGo.AddComponent<GameBootstrap>();
-            yield return null; // let Awake run
+            yield return null; // let Awake run — title screen only
+
+            // Title screen is up; the game is not built until the player starts.
+            Assert.IsNotNull(GameObject.Find("TitleCanvas"), "title screen");
+            Assert.IsNull(bootstrap.Game, "game not started yet");
+
+            bootstrap.StartGame(); // simulate the title-screen click
+            yield return null;
 
             // --- UI built ---
             Assert.IsNotNull(GameObject.Find("Canvas"), "canvas");
@@ -88,6 +98,26 @@ namespace MergeCafe.Tests
             Assert.IsTrue(SaveManager.TryLoadInto(restored, now));
             Assert.AreEqual(2, restored.Board.GetItem(second).Level);
             Assert.AreEqual(8, restored.Generators.Get(ItemType.Coffee).Energy);
+        }
+
+        [UnityTest]
+        public IEnumerator TitleScreen_Click_StartsGameAndRemovesTitle()
+        {
+            _bootstrapGo = new GameObject("TestBootstrap");
+            var bootstrap = _bootstrapGo.AddComponent<GameBootstrap>();
+            yield return null;
+
+            var title = Object.FindObjectOfType<MergeCafe.UI.TitleScreenView>();
+            Assert.IsNotNull(title, "title screen view present");
+            Assert.IsNull(bootstrap.Game, "game not started before click");
+
+            // Simulate the click on the title screen.
+            title.OnPointerClick(new PointerEventData(EventSystem.current));
+            yield return null;
+
+            Assert.IsNotNull(bootstrap.Game, "game started after click");
+            Assert.IsNull(GameObject.Find("TitleCanvas"), "title screen removed after click");
+            Assert.IsNotNull(GameObject.Find("Canvas"), "game canvas built after click");
         }
     }
 }

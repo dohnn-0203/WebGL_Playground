@@ -36,7 +36,19 @@ namespace MergeCafe.Core
 #endif
 
             UIFactory.EnsureEventSystem();
+
+            // Show the title screen first; the game is built when the player clicks (§ start flow).
+            TitleScreenView.Build(StartGame);
+        }
+
+        /// <summary>Builds the full game. Idempotent; called by the title screen click (or tests).</summary>
+        public void StartGame()
+        {
+            if (_game != null)
+                return;
+
             _ui = UIFactory.BuildBaseLayout();
+            CafeDecor.Apply(_ui);
 
             _hud = HudView.Build(_ui.TopHud);
             _hud.SetGold(0);
@@ -113,6 +125,9 @@ namespace MergeCafe.Core
 
         private void Update()
         {
+            // Null until the player starts the game from the title screen.
+            if (_game == null)
+                return;
             _game.Tick(TimeUtil.NowUnixSeconds());
         }
 
