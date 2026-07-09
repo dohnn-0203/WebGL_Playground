@@ -5,6 +5,7 @@ using MergeCafe.Core;
 using MergeCafe.Data;
 using MergeCafe.Orders;
 using MergeCafe.Save;
+using MergeCafe.Suika;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -162,6 +163,38 @@ namespace MergeCafe.Tests
                 yield return null;
 
             Assert.IsNotNull(game.Board); // reached here → no stack overflow along these paths
+        }
+
+        [UnityTest]
+        public IEnumerator Suika_TwoEqualFruitsMergeIntoNextSize()
+        {
+            var game = MergeCafe.Suika.SuikaGame.Create();
+            yield return null;
+
+            Assert.AreEqual(0, game.Score);
+            var a = game.SpawnFruit(1, new Vector2(-0.5f, 0f), true);
+            var b = game.SpawnFruit(1, new Vector2(0.5f, 0f), true);
+            Assert.AreEqual(2, game.FruitCount);
+
+            game.RequestMerge(a, b);
+            yield return null;
+
+            Assert.AreEqual(1, game.FruitCount, "two fruits became one");
+            Assert.AreEqual(SuikaCatalog.MergeScore(2), game.Score, "score awarded");
+
+            var fruits = Object.FindObjectsOfType<MergeCafe.Suika.SuikaFruit>();
+            bool hasLevel2 = false;
+            foreach (var f in fruits)
+                if (f.Level == 2) hasLevel2 = true;
+            Assert.IsTrue(hasLevel2, "a level-2 fruit was created");
+
+            foreach (string n in new[] { "SuikaGame", "SuikaRoot", "SuikaHud" })
+            {
+                var go = GameObject.Find(n);
+                if (go != null) Object.Destroy(go);
+            }
+            var es = Object.FindObjectOfType<EventSystem>();
+            if (es != null) Object.Destroy(es.gameObject);
         }
 
         [UnityTest]

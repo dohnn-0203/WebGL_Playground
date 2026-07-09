@@ -4,6 +4,7 @@ using MergeCafe.Generators;
 using MergeCafe.Items;
 using MergeCafe.Orders;
 using MergeCafe.Save;
+using MergeCafe.Suika;
 using MergeCafe.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,9 +25,13 @@ namespace MergeCafe.Core
         private BoardGridView _gridView;
         private ToastView _toast;
         private OrderCardView[] _orderCards;
+        private SuikaGame _suika;
 
         /// <summary>Exposed for play-mode tests.</summary>
         public GameManager Game => _game;
+
+        /// <summary>Exposed for play-mode tests.</summary>
+        public SuikaGame Suika => _suika;
 
         private void Awake()
         {
@@ -38,8 +43,16 @@ namespace MergeCafe.Core
 
             UIFactory.EnsureEventSystem();
 
-            // Show the title screen first; the game is built when the player clicks (§ start flow).
-            TitleScreenView.Build(StartGame);
+            // Show the game-select hub; a game is built when the player picks a card.
+            TitleScreenView.Build(StartGame, StartSuika);
+        }
+
+        /// <summary>Builds the watermelon game. Idempotent.</summary>
+        public void StartSuika()
+        {
+            if (_game != null || _suika != null)
+                return;
+            _suika = SuikaGame.Create();
         }
 
         /// <summary>Builds the full game. Idempotent; called by the title screen click (or tests).</summary>

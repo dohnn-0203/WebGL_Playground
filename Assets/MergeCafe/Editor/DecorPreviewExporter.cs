@@ -1,5 +1,6 @@
 using System.IO;
 using MergeCafe.Data;
+using MergeCafe.Suika;
 using MergeCafe.UI;
 using UnityEditor;
 using UnityEngine;
@@ -59,6 +60,51 @@ namespace MergeCafe.EditorTools
             File.WriteAllBytes(Path.Combine(dir, "icon_sheet.png"), tex.EncodeToPNG());
             Object.DestroyImmediate(tex);
             Debug.Log($"[MergeCafe] Icon sheet exported to {Path.GetFullPath(dir)}");
+        }
+
+        [MenuItem("MergeCafe/Export Suika Fruit Sheet")]
+        public static void ExportSuikaSheet()
+        {
+            string dir = GetArg("-exportDir") ?? "Temp/DecorPreviews";
+            Directory.CreateDirectory(dir);
+
+            const int tile = 128, cols = 4, rows = 3;
+            int W = cols * tile, H = rows * tile;
+            var sheet = new Color32[W * H];
+            var bg = new Color32(0xE8, 0xE4, 0xDA, 0xFF);
+            for (int i = 0; i < sheet.Length; i++) sheet[i] = bg;
+
+            for (int level = 1; level <= SuikaCatalog.Count; level++)
+            {
+                int idx = level - 1;
+                BlitN(sheet, W, SuikaFruitSprites.Pixels(level, tile), tile, idx % cols, idx / cols, rows);
+            }
+
+            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false);
+            tex.SetPixels32(sheet);
+            tex.Apply();
+            File.WriteAllBytes(Path.Combine(dir, "suika_sheet.png"), tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+            Debug.Log($"[MergeCafe] Suika fruit sheet exported to {Path.GetFullPath(dir)}");
+        }
+
+        private static void BlitN(Color32[] sheet, int sheetW, Color32[] icon, int tile, int col, int row, int rows)
+        {
+            int ox = col * tile;
+            int oy = (rows - 1 - row) * tile;
+            for (int y = 0; y < tile; y++)
+                for (int x = 0; x < tile; x++)
+                {
+                    Color32 src = icon[y * tile + x];
+                    float a = src.a / 255f;
+                    if (a <= 0f) continue;
+                    int di = (oy + y) * sheetW + (ox + x);
+                    Color32 dst = sheet[di];
+                    sheet[di] = new Color32(
+                        (byte)(src.r * a + dst.r * (1 - a)),
+                        (byte)(src.g * a + dst.g * (1 - a)),
+                        (byte)(src.b * a + dst.b * (1 - a)), 255);
+                }
         }
 
         // Composites a tile-sized RGBA icon onto the sheet at grid (col, row). Row 0 is the TOP row.

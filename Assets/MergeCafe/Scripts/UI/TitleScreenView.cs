@@ -14,6 +14,7 @@ namespace MergeCafe.UI
     public sealed class TitleScreenView : MonoBehaviour
     {
         private Action _onStartMerge;
+        private Action _onStartSuika;
         private bool _started;
         private TextMeshProUGUI _notice;
         private Coroutine _noticeRoutine;
@@ -24,10 +25,7 @@ namespace MergeCafe.UI
         private static readonly Color CardBg = Hex("2E2420");
         private static readonly Color CardLocked = Hex("241C18");
 
-        /// <summary>Number of "개발중" placeholder slots for future games.</summary>
-        private const int ComingSoonCount = 2;
-
-        public static TitleScreenView Build(Action onStartMerge)
+        public static TitleScreenView Build(Action onStartMerge, Action onStartSuika)
         {
             var canvasGo = new GameObject("TitleCanvas");
             canvasGo.layer = LayerMask.NameToLayer("UI");
@@ -50,6 +48,7 @@ namespace MergeCafe.UI
 
             var view = bg.gameObject.AddComponent<TitleScreenView>();
             view._onStartMerge = onStartMerge;
+            view._onStartSuika = onStartSuika;
             var content = (RectTransform)bg.transform;
 
             Image glow = UIFactory.CreateImage(content, "Glow",
@@ -71,17 +70,15 @@ namespace MergeCafe.UI
                 UITheme.TextDim, TextAnchor.MiddleCenter);
             Center((RectTransform)subtitle.transform, 250f, 60f, 1200f);
 
-            // Cards: merge game first (playable), then "개발중" placeholders.
-            int total = 1 + ComingSoonCount;
+            // Cards: 머지 카페 · 수박게임 (both playable) · 개발중 (placeholder).
             const float cardW = 300f, gap = 44f;
-            float startX = -(total - 1) * 0.5f * (cardW + gap);
+            float startX = -(cardW + gap);
 
-            view.BuildCard(content, startX, "머지 카페", "플레이 가능", true, view.SelectMerge);
-            for (int i = 0; i < ComingSoonCount; i++)
-            {
-                float x = startX + (i + 1) * (cardW + gap);
-                view.BuildCard(content, x, "개발중", "", false, view.ShowComingSoon);
-            }
+            view.BuildCard(content, startX, "머지 카페", "플레이 가능", true, view.SelectMerge,
+                CafeArt.CoffeeCup, UITheme.TextGold);
+            view.BuildCard(content, 0f, "수박게임", "플레이 가능", true, view.SelectSuika,
+                Suika.SuikaFruitSprites.Fruit(11), Color.white);
+            view.BuildCard(content, cardW + gap, "개발중", "", false, view.ShowComingSoon, null, Color.white);
 
             view._notice = UIFactory.CreateText(content, "Notice", "", 32, UITheme.TextMain,
                 TextAnchor.MiddleCenter);
@@ -92,7 +89,7 @@ namespace MergeCafe.UI
         }
 
         private void BuildCard(RectTransform parent, float x, string name, string status,
-            bool playable, Action onClick)
+            bool playable, Action onClick, Sprite icon, Color iconTint)
         {
             const float cardW = 300f, cardH = 380f;
 
@@ -126,15 +123,15 @@ namespace MergeCafe.UI
             discRect.anchoredPosition = new Vector2(0f, -40f);
             discRect.sizeDelta = new Vector2(180f, 180f);
 
-            if (playable)
+            if (icon != null)
             {
-                Image cup = UIFactory.CreateImage(discRect, "Cup", UITheme.TextGold);
-                cup.sprite = CafeArt.CoffeeCup;
-                cup.preserveAspect = true;
-                cup.raycastTarget = false;
-                UIFactory.Stretch((RectTransform)cup.transform);
-                ((RectTransform)cup.transform).offsetMin = new Vector2(24f, 24f);
-                ((RectTransform)cup.transform).offsetMax = new Vector2(-24f, -24f);
+                Image iconImage = UIFactory.CreateImage(discRect, "Icon", iconTint);
+                iconImage.sprite = icon;
+                iconImage.preserveAspect = true;
+                iconImage.raycastTarget = false;
+                UIFactory.Stretch((RectTransform)iconImage.transform);
+                ((RectTransform)iconImage.transform).offsetMin = new Vector2(22f, 22f);
+                ((RectTransform)iconImage.transform).offsetMax = new Vector2(-22f, -22f);
             }
             else
             {
@@ -163,16 +160,17 @@ namespace MergeCafe.UI
         }
 
         /// <summary>Starts the merge game (also used by play-mode tests).</summary>
-        public void SelectMerge()
+        public void SelectMerge() => Select(_onStartMerge);
+
+        /// <summary>Starts the watermelon game.</summary>
+        public void SelectSuika() => Select(_onStartSuika);
+
+        private void Select(Action start)
         {
             if (_started)
                 return;
             _started = true;
-
-            Action start = _onStartMerge;
-            _onStartMerge = null;
             start?.Invoke();
-
             Destroy(transform.root.gameObject);
         }
 
