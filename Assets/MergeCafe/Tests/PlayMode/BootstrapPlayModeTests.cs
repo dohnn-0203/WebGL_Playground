@@ -97,7 +97,7 @@ namespace MergeCafe.Tests
             var restored = new GameManager(now);
             Assert.IsTrue(SaveManager.TryLoadInto(restored, now));
             Assert.AreEqual(2, restored.Board.GetItem(second).Level);
-            Assert.AreEqual(8, restored.Generators.Get(ItemType.Coffee).Energy);
+            Assert.AreEqual(18, restored.Generators.Get(ItemType.Coffee).Energy);
         }
 
         [UnityTest]

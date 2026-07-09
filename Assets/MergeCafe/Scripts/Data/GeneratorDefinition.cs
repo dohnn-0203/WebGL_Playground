@@ -30,14 +30,16 @@ namespace MergeCafe.Data
     /// </summary>
     public static class GeneratorCatalog
     {
+        // Energy balance (max energy, +1 every 5s). Higher starting pools and a fast,
+        // uniform 5-second recovery keep the early game flowing.
         public static readonly GeneratorDefinition CoffeeMachine =
-            new GeneratorDefinition(ItemType.Coffee, "커피머신", 10, 30, 0);
+            new GeneratorDefinition(ItemType.Coffee, "커피머신", 20, 5, 0);
 
         public static readonly GeneratorDefinition Oven =
-            new GeneratorDefinition(ItemType.Bread, "오븐", 8, 35, 150);
+            new GeneratorDefinition(ItemType.Bread, "오븐", 16, 5, 150);
 
         public static readonly GeneratorDefinition Fridge =
-            new GeneratorDefinition(ItemType.Dessert, "냉장고", 6, 45, 300);
+            new GeneratorDefinition(ItemType.Dessert, "냉장고", 12, 5, 300);
 
         public static readonly IReadOnlyList<GeneratorDefinition> All =
             new[] { CoffeeMachine, Oven, Fridge };

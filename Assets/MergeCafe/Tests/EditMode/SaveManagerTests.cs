@@ -26,7 +26,9 @@ namespace MergeCafe.Tests
             source.Board.TryPlaceItem(BoardManager.IndexOf(2, 2), new ItemInstance(ItemType.Coffee, 2));
             source.Board.TryPlaceItem(BoardManager.IndexOf(3, 4), new ItemInstance(ItemType.Dessert, 5));
             source.Generators.Get(ItemType.Coffee).Energy = 4;
-            source.Generators.Get(ItemType.Coffee).LastRecoveryUnix = T0 - 10;
+            // Anchor at T0 so Apply(...,T0) triggers no recovery — this test checks the
+            // round-trip, not offline recovery (covered separately).
+            source.Generators.Get(ItemType.Coffee).LastRecoveryUnix = T0;
 
             string json = SaveManager.ToJson(source);
             Assert.IsTrue(SaveManager.TryParse(json, out SaveData data));
@@ -51,7 +53,7 @@ namespace MergeCafe.Tests
             GeneratorState coffeeGen = restored.Generators.Get(ItemType.Coffee);
             Assert.AreEqual(2, coffeeGen.UpgradeLevel);
             Assert.AreEqual(4, coffeeGen.Energy);
-            Assert.AreEqual(T0 - 10, coffeeGen.LastRecoveryUnix, 0.001);
+            Assert.AreEqual(T0, coffeeGen.LastRecoveryUnix, 0.001);
             Assert.IsTrue(restored.Generators.Get(ItemType.Bread).Unlocked);
             Assert.IsFalse(restored.Generators.Get(ItemType.Dessert).Unlocked);
 
@@ -78,7 +80,7 @@ namespace MergeCafe.Tests
             SaveManager.TryParse(json, out SaveData data);
 
             GameManager restored = NewGame();
-            SaveManager.Apply(restored, data, T0 + 95); // 3 intervals of 30s while "offline"
+            SaveManager.Apply(restored, data, T0 + 15); // 3 intervals of 5s while "offline"
 
             Assert.AreEqual(8, restored.Generators.Get(ItemType.Coffee).Energy);
         }

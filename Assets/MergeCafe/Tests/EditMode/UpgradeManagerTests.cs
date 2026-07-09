@@ -106,7 +106,7 @@ namespace MergeCafe.Tests
 
             Assert.IsTrue(_upgrades.TryUpgradeGenerator(coffee, _economy));
             Assert.AreEqual(2, coffee.UpgradeLevel);
-            Assert.AreEqual(13, coffee.MaxEnergy); // 10 + 3
+            Assert.AreEqual(23, coffee.MaxEnergy); // 20 + 3
             Assert.AreEqual(0, _economy.Gold);
         }
 
@@ -125,7 +125,7 @@ namespace MergeCafe.Tests
             Assert.IsTrue(_upgrades.TryUpgradeGenerator(coffee, _economy));  // → 4
             Assert.IsFalse(_upgrades.TryUpgradeGenerator(coffee, _economy)); // maxed
             Assert.AreEqual(4, coffee.UpgradeLevel);
-            Assert.AreEqual(18, coffee.MaxEnergy); // 10 + 8
+            Assert.AreEqual(28, coffee.MaxEnergy); // 20 + 8
 
             var poor = new EconomyManager();
             var generators2 = new GeneratorManager(T0, () => 0.99f);
