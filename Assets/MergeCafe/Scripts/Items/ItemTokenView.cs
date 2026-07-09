@@ -82,9 +82,6 @@ namespace MergeCafe.Items
             view._levelText = UIFactory.CreateText(badge.transform, "Lv", "", 22, UITheme.TextMain,
                 TextAnchor.MiddleCenter, FontStyle.Bold);
             UIFactory.Stretch((RectTransform)view._levelText.transform);
-            view._levelText.resizeTextForBestFit = true;
-            view._levelText.resizeTextMinSize = 10;
-            view._levelText.resizeTextMaxSize = 24;
 
             return view;
         }

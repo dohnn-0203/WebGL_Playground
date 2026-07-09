@@ -15,7 +15,16 @@ namespace MergeCafe.EditorTools
         private const string OutputDir = "docs";
 
         [MenuItem("MergeCafe/Build WebGL (docs)")]
-        public static void BuildForGitHubPages()
+        public static void BuildForGitHubPages() => Build(false);
+
+        /// <summary>
+        /// Diagnostic build: full exception support WITH readable C# stack traces, so a
+        /// runtime "Maximum call stack size exceeded" shows the actual managed call chain.
+        /// </summary>
+        [MenuItem("MergeCafe/Build WebGL Diagnostic (docs)")]
+        public static void BuildDiagnostic() => Build(true);
+
+        private static void Build(bool diagnostic)
         {
             PlayerSettings.companyName = "MergeCafe";
             PlayerSettings.productName = "Merge Cafe Puzzle";
@@ -23,13 +32,16 @@ namespace MergeCafe.EditorTools
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
             PlayerSettings.WebGL.decompressionFallback = true;
             PlayerSettings.WebGL.dataCaching = true;
+            PlayerSettings.WebGL.exceptionSupport = diagnostic
+                ? WebGLExceptionSupport.FullWithStacktrace
+                : WebGLExceptionSupport.ExplicitlyThrownExceptionsOnly;
 
             var options = new BuildPlayerOptions
             {
                 scenes = new[] { SceneGenerator.ScenePath },
                 target = BuildTarget.WebGL,
                 locationPathName = OutputDir,
-                options = BuildOptions.None
+                options = diagnostic ? BuildOptions.Development : BuildOptions.None
             };
 
             BuildReport report = BuildPipeline.BuildPlayer(options);

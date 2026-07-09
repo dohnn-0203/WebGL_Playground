@@ -70,16 +70,13 @@ namespace MergeCafe.Items
             iconRect.offsetMin = new Vector2(6f, 0f);
             iconRect.offsetMax = new Vector2(-6f, -4f);
 
-            view._name = UIFactory.CreateText(view._plate.transform, "Name", "", 18, UITheme.TextMain,
+            view._name = UIFactory.CreateText(view._plate.transform, "Name", "", 17, UITheme.TextMain,
                 TextAnchor.MiddleCenter, FontStyle.Bold);
             var nameRect = (RectTransform)view._name.transform;
             nameRect.anchorMin = new Vector2(0f, 0f);
             nameRect.anchorMax = new Vector2(1f, 0.24f);
             nameRect.offsetMin = new Vector2(2f, 2f);
             nameRect.offsetMax = new Vector2(-2f, 0f);
-            view._name.resizeTextForBestFit = true;
-            view._name.resizeTextMinSize = 8;
-            view._name.resizeTextMaxSize = 20;
             view._name.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1f, -1f);
 
             // Gold "tap to produce" badge.

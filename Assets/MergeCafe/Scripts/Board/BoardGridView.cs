@@ -44,9 +44,8 @@ namespace MergeCafe.Board
             padding.offsetMax = new Vector2(-24f, -24f);
 
             RectTransform container = UIFactory.CreateUiObject(padding, "BoardContainer");
-            var fitter = container.gameObject.AddComponent<AspectRatioFitter>();
-            fitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-            fitter.aspectRatio = BoardManager.Cols / (float)BoardManager.Rows;
+            var fitter = container.gameObject.AddComponent<BoardAspectFitter>();
+            fitter.Aspect = BoardManager.Cols / (float)BoardManager.Rows;
 
             var view = container.gameObject.AddComponent<BoardGridView>();
             view._board = board;
