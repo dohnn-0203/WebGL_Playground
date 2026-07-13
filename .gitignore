@@ -94,6 +94,11 @@ mono_crash.*
 *.unitypackage.meta
 *.app
 
+# WebGL build output. It is published to the gh-pages branch by tools/deploy-pages.ps1
+# (single force-pushed orphan commit) instead of being committed to main, so build
+# binaries never accumulate in main's history. GitHub Pages serves from gh-pages/(root).
+/docs/
+
 # Crashlytics generated file
 crashlytics-build.properties
 

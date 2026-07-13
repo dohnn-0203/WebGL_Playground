@@ -6,7 +6,7 @@
 ## 플레이
 
 - **GitHub Pages**: https://dohnn-0203.github.io/WebGL_Playground/
-  (저장소 Settings → Pages → Source를 `main` / `docs`로 설정하면 활성화됩니다)
+  (저장소 Settings → Pages → Source를 **`gh-pages` / `(root)`** 로 설정하면 활성화됩니다)
 - **로컬 실행**: 저장소 루트에서 `python -m http.server 8765 --directory docs` 후
   브라우저에서 `http://localhost:8765` 접속
 
@@ -74,13 +74,21 @@
 - 게임 로직은 순수 C# — 자동화 테스트 **EditMode 80건 + PlayMode 6건**
 - 설계 문서: [`webGL_game.md`](webGL_game.md)
 
-### 빌드
+### 빌드 & 배포
 
-에디터 메뉴 `MergeCafe → Build WebGL (docs)` 또는 배치 모드:
+1. **빌드** — 에디터 메뉴 `MergeCafe → Build WebGL (docs)` 또는 배치 모드:
 
-```text
-Unity.exe -batchmode -nographics -quit -projectPath <프로젝트 경로> ^
-  -buildTarget WebGL -executeMethod MergeCafe.EditorTools.WebGLBuilder.BuildForGitHubPages
-```
+   ```text
+   Unity.exe -batchmode -nographics -quit -projectPath <프로젝트 경로> ^
+     -buildTarget WebGL -executeMethod MergeCafe.EditorTools.WebGLBuilder.BuildForGitHubPages
+   ```
 
-출력은 저장소 루트 `docs/`. **압축은 Disabled(무압축)** 로 빌드합니다 — GitHub Pages는 사전 압축된 `.unityweb` 전송을 제대로 처리하지 못해 런타임 크래시가 발생하므로, 무압축으로 배포하고 Pages가 자체 transparent gzip으로 전송하게 합니다.
+   출력은 저장소 루트 `docs/`. **압축은 Disabled(무압축)** 로 빌드합니다 — GitHub Pages는 사전 압축된 `.unityweb` 전송을 제대로 처리하지 못해 런타임 크래시가 발생하므로, 무압축으로 배포하고 Pages가 자체 transparent gzip으로 전송하게 합니다.
+
+2. **배포** — `docs/`는 **git에 커밋하지 않습니다**(`.gitignore` 처리). 대신 배포 스크립트가 `docs/` 내용을 `gh-pages` 브랜치에 **단일 오프판 커밋으로 강제 푸시**합니다:
+
+   ```powershell
+   pwsh tools/deploy-pages.ps1
+   ```
+
+   이렇게 하면 빌드 바이너리(≈29MB)가 `main` 히스토리에 누적되지 않고, `gh-pages`도 매 배포마다 커밋 1개로 덮어써집니다. GitHub Pages Source는 **`gh-pages` / `(root)`** 로 설정합니다.
