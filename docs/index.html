@@ -124,10 +124,29 @@
         if (!failed) canvas.focus({ preventScroll: true });
       });
       canvas.addEventListener('contextmenu', event => event.preventDefault());
+      // This build pauses on blur. Resume its canvas when the host resizes the
+      // iframe, otherwise resizing clears the paused WebGL drawing buffer.
+      let lastWidth = canvas.clientWidth;
+      let lastHeight = canvas.clientHeight;
+      const resizeObserver = new ResizeObserver(() => {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (width === lastWidth && height === lastHeight) return;
+        lastWidth = width;
+        lastHeight = height;
+        if (window.self === window.top || !unityInstance || stopped || failed) return;
+        requestAnimationFrame(() => {
+          if (!stopped && !failed && document.visibilityState === 'visible') {
+            canvas.focus({ preventScroll: true });
+          }
+        });
+      });
+      resizeObserver.observe(canvas);
       document.getElementById('retry').addEventListener('click', () => window.location.reload());
       window.addEventListener('pagehide', event => {
         if (event.persisted) return;
         stopped = true;
+        resizeObserver.disconnect();
         if (unityInstance) unityInstance.Quit();
       });
     })();
