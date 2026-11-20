@@ -1,131 +1,138 @@
-<!DOCTYPE html>
-<html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | Merge Cafe Puzzle</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-  </head>
-  <body>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17191f">
+  <title>미니게임 천국</title>
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif; background: #17191f; color: #f2f1f7; }
+    * { box-sizing: border-box; }
+    html, body, .player { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    .player { position: relative; }
+    [hidden] { display: none !important; }
+    #unity-canvas { display: block; width: 100%; height: 100%; background: #17191f; touch-action: none; }
+    #unity-canvas:focus { outline: none; }
+    #unity-canvas:focus-visible { outline: 2px solid #bca6ff; outline-offset: -2px; }
+    .overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; background: #17191f; overflow: auto; }
+    .card { width: min(100%, 360px); text-align: center; }
+    h1, h2 { margin: 0; font-size: clamp(16px, 3vw, 22px); line-height: 1.5; word-break: keep-all; }
+    p { margin: 12px 0 0; color: #b8becb; font-size: 14px; line-height: 1.7; word-break: keep-all; }
+    progress { display: block; width: 100%; height: 6px; margin-top: 22px; appearance: none; border: 0; border-radius: 3px; overflow: hidden; background: #30313f; accent-color: #bca6ff; }
+    progress::-webkit-progress-bar { background: #30313f; }
+    progress::-webkit-progress-value { background: #bca6ff; }
+    progress::-moz-progress-bar { background: #bca6ff; }
+    button { min-height: 40px; padding: 8px 14px; border: 1px solid #bca6ff; border-radius: 5px; font: inherit; font-size: 14px; color: #17191f; background: #bca6ff; cursor: pointer; }
+    button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+    #retry { margin-top: 18px; }
+    .no-script { position: absolute; inset: 30% 20px auto; text-align: center; }
+    @media (max-height: 260px) { .overlay { padding: 12px; } .description { display: none; } progress { margin-top: 12px; } p { margin-top: 8px; } }
+  </style>
+</head>
+<body>
+  <main class="player" aria-label="미니게임 천국 플레이어">
+    <canvas id="unity-canvas" width="960" height="600" tabindex="0" aria-label="머지 카페, 수박게임, 버블슈터. 게임을 선택해 플레이하세요."></canvas>
+    <section class="overlay" id="loading" aria-labelledby="loading-title" aria-busy="true">
+      <div class="card">
+        <h1 id="loading-title">미니게임을 불러오는 중입니다</h1>
+        <p class="description">첫 실행에는 시간이 걸릴 수 있어요.</p>
+        <progress id="progress" max="1" value="0" aria-label="게임 로딩 진행률"></progress>
+        <p id="progress-label" role="status">준비 중</p>
       </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">Merge Cafe Puzzle</div>
+    </section>
+    <section class="overlay" id="error" aria-labelledby="error-title" hidden>
+      <div class="card" role="alert">
+        <h2 id="error-title">게임을 불러오지 못했어요</h2>
+        <p id="error-message">인터넷 연결을 확인하고 다시 시도해 주세요.</p>
+        <button type="button" id="retry">다시 불러오기</button>
       </div>
-    </div>
-    <script>
+    </section>
+    <noscript><p class="no-script">게임을 실행하려면 브라우저에서 JavaScript를 허용해 주세요.</p></noscript>
+  </main>
+  <script>
+    'use strict';
+    (() => {
+      const canvas = document.getElementById('unity-canvas');
+      const loading = document.getElementById('loading');
+      const errorPanel = document.getElementById('error');
+      const progress = document.getElementById('progress');
+      const progressLabel = document.getElementById('progress-label');
+      let unityInstance = null;
+      let stopped = false;
+      let failed = false;
+      let lastPercent = -1;
 
-      var container = document.querySelector("#unity-container");
-      var canvas = document.querySelector("#unity-canvas");
-      var loadingBar = document.querySelector("#unity-loading-bar");
-      var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-      var warningBanner = document.querySelector("#unity-warning");
-
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
+      function showError(message, detail) {
+        if (stopped || failed) return;
+        failed = true;
+        loading.hidden = true;
+        loading.setAttribute('aria-busy', 'false');
+        document.getElementById('error-message').textContent = message;
+        errorPanel.hidden = false;
+        canvas.tabIndex = -1;
+        if (detail) console.error('Mini game player:', detail);
       }
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/docs.loader.js";
-      var config = {
-        dataUrl: buildUrl + "/docs.data",
-        frameworkUrl: buildUrl + "/docs.framework.js",
-        codeUrl: buildUrl + "/docs.wasm",
-        streamingAssetsUrl: "StreamingAssets",
+      const buildUrl = 'Build';
+      const loaderUrl = buildUrl + '/docs.loader.js';
+      const config = {
+        dataUrl: buildUrl + '/docs.data',
+        frameworkUrl: buildUrl + '/docs.framework.js',
+        codeUrl: buildUrl + '/docs.wasm',
+        streamingAssetsUrl: 'StreamingAssets',
         companyName: "MergeCafe",
         productName: "Merge Cafe Puzzle",
         productVersion: "1.0",
-        showBanner: unityShowBanner,
+        matchWebGLToCanvasSize: true,
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        showBanner(message, type) {
+          if (type === 'error') showError('게임을 실행하지 못했어요. 다시 불러오거나 최신 브라우저에서 시도해 주세요.', message);
+          else console.warn('Mini game player:', message);
+        }
       };
 
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
-
-      // If you would like all file writes inside Unity Application.persistentDataPath
-      // directory to automatically persist so that the contents are remembered when
-      // the user revisits the site the next time, uncomment the following line:
-      // config.autoSyncPersistentDataPath = true;
-      // This autosyncing is currently not the default behavior to avoid regressing
-      // existing user projects that might rely on the earlier manual
-      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
-      // expected to change.
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
-
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        container.className = "unity-mobile";
-        canvas.className = "unity-mobile";
-
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
-
-
-      } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
-      }
-
-      loadingBar.style.display = "block";
-
-      var script = document.createElement("script");
+      const script = document.createElement('script');
       script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          progressBarFull.style.width = 100 * progress + "%";
-              }).then((unityInstance) => {
-                loadingBar.style.display = "none";
-                fullscreenButton.onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
-              }).catch((message) => {
-                alert(message);
-              });
-            };
-
+      script.onerror = () => showError('게임 파일을 가져오지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.');
+      script.onload = async () => {
+        if (stopped || failed) return;
+        try {
+          unityInstance = await createUnityInstance(canvas, config, value => {
+            if (stopped || failed) return;
+            const amount = Math.min(1, Math.max(0, Number(value) || 0));
+            progress.value = amount;
+            const percent = Math.round(amount * 100);
+            if (percent !== lastPercent) {
+              progressLabel.textContent = percent === 100 ? '게임 화면을 준비하고 있어요' : percent + '%';
+              lastPercent = percent;
+            }
+          });
+          if (stopped || failed) {
+            unityInstance.Quit();
+            return;
+          }
+          loading.hidden = true;
+          loading.setAttribute('aria-busy', 'false');
+          canvas.focus({ preventScroll: true });
+        } catch (error) {
+          showError('게임을 실행하지 못했어요. 다시 불러오거나 최신 브라우저에서 시도해 주세요.', error);
+        }
+      };
       document.body.appendChild(script);
 
-    </script>
-  </body>
+      canvas.addEventListener('pointerdown', () => {
+        if (!failed) canvas.focus({ preventScroll: true });
+      });
+      canvas.addEventListener('contextmenu', event => event.preventDefault());
+      document.getElementById('retry').addEventListener('click', () => window.location.reload());
+      window.addEventListener('pagehide', event => {
+        if (event.persisted) return;
+        stopped = true;
+        if (unityInstance) unityInstance.Quit();
+      });
+    })();
+  </script>
+</body>
 </html>
+
+
