@@ -49,6 +49,9 @@ namespace MergeCafe.EditorTools
                 options = diagnostic ? BuildOptions.Development : BuildOptions.None
             };
 
+            // Use the responsive embed player on every build so Pages redeploys keep it.
+            PlayerSettings.WebGL.template = "PROJECT:RiriEmbed";
+
             BuildReport report = BuildPipeline.BuildPlayer(options);
             if (report.summary.result != BuildResult.Succeeded)
             {
@@ -67,3 +70,5 @@ namespace MergeCafe.EditorTools
         }
     }
 }
+
+
